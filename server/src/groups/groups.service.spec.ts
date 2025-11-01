@@ -2,7 +2,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
+import type { Repository, DeleteResult } from 'typeorm';
 import { GroupsService } from './groups.service';
 import { Group } from './entities/group.entity';
 
@@ -17,13 +17,12 @@ describe('GroupsService', () => {
     end: 20,
   };
 
-  // Создаём частичный мок и приводим к jest.Mocked<Repository<Group>>
   const partialMockRepo: Partial<Record<keyof Repository<Group>, jest.Mock>> = {
     create: jest.fn((dto: Partial<Group>) => dto as Group),
     save: jest.fn().mockResolvedValue(mockGroup),
     find: jest.fn().mockResolvedValue([mockGroup]),
     findOne: jest.fn().mockResolvedValue(mockGroup),
-    delete: jest.fn().mockResolvedValue({ affected: 1 }),
+    delete: jest.fn().mockResolvedValue({ affected: 1 } as DeleteResult),
   };
 
   const mockRepo = partialMockRepo as unknown as jest.Mocked<Repository<Group>>;
