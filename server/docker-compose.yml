@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: ve-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ve_user
+      POSTGRES_PASSWORD: ve_pass
+      POSTGRES_DB: ve_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: ve-server
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: ve_user
+      DATABASE_PASSWORD: ve_pass
+      DATABASE_NAME: ve_db
+    volumes:
+      - .:/app
+    command: npm run start:dev
