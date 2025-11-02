@@ -26,7 +26,7 @@ export const Uploads = () => {
       const group = await getGroupById(id);
       setSelectedGroup(group);
       console.log("Selected group:", group);
-      // TODO: потом добавим логику загрузки интервалов в таймлайн
+      // TODO
     } catch (err) {
       console.error("Error loading group:", err);
     }

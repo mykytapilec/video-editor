@@ -8,9 +8,9 @@ import { SceneRef } from "./scene/scene.types";
 import StateManager, { DESIGN_LOAD } from "@designcombo/state";
 import { useEffect, useRef, useState } from "react";
 import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ImperativePanelHandle } from "react-resizable-panels";
 import { getCompactFontData, loadFonts } from "./utils/fonts";
@@ -32,159 +32,202 @@ import ControlItemHorizontal from "./control-item-horizontal";
 import { design } from "./mock";
 
 const stateManager = new StateManager({
-	size: {
-		width: 1080,
-		height: 1920,
-	},
+  size: {
+    width: 1080,
+    height: 1920,
+  },
 });
 
 const Editor = ({ tempId, id }: { tempId?: string; id?: string }) => {
-	const [projectName, setProjectName] = useState<string>("Untitled video");
-	const { scene } = useSceneStore();
-	const timelinePanelRef = useRef<ImperativePanelHandle>(null);
-	const sceneRef = useRef<SceneRef>(null);
-	const { timeline, playerRef } = useStore();
-	const { activeIds, trackItemsMap, transitionsMap } = useStore();
-	const [loaded, setLoaded] = useState(false);
-	const [trackItem, setTrackItem] = useState<ITrackItem | null>(null);
-	const {
-		setTrackItem: setLayoutTrackItem,
-		setFloatingControl,
-		setLabelControlItem,
-		setTypeControlItem,
-	} = useLayoutStore();
-	const isLargeScreen = useIsLargeScreen();
+  const [projectName, setProjectName] = useState<string>("Untitled video");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-	useTimelineEvents();
+  const { scene } = useSceneStore();
+  const timelinePanelRef = useRef<ImperativePanelHandle>(null);
+  const sceneRef = useRef<SceneRef>(null);
+  const { timeline, playerRef } = useStore();
+  const { activeIds, trackItemsMap, transitionsMap } = useStore();
+  const [loaded, setLoaded] = useState(false);
+  const [trackItem, setTrackItem] = useState<ITrackItem | null>(null);
+  const {
+    setTrackItem: setLayoutTrackItem,
+    setFloatingControl,
+    setLabelControlItem,
+    setTypeControlItem,
+  } = useLayoutStore();
+  const isLargeScreen = useIsLargeScreen();
+  const { setCompactFonts, setFonts } = useDataState();
 
-	const { setCompactFonts, setFonts } = useDataState();
+  useTimelineEvents();
 
-	useEffect(() => {
-		dispatch(DESIGN_LOAD, { payload: design });
-	}, []);
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        setLoading(true);
+        const projectId = id || tempId;
+        if (!projectId) {
+          console.warn("No project ID provided, using mock design");
+          dispatch(DESIGN_LOAD, { payload: design });
+          setLoading(false);
+          return;
+        }
 
-	useEffect(() => {
-		setCompactFonts(getCompactFontData(FONTS));
-		setFonts(FONTS);
-	}, []);
+        const response = await fetch(`/api/projects/${projectId}`);
+        if (!response.ok) throw new Error("Failed to fetch project");
 
-	useEffect(() => {
-		loadFonts([
-			{
-				name: SECONDARY_FONT,
-				url: SECONDARY_FONT_URL,
-			},
-		]);
-	}, []);
+        const data = await response.json();
 
-	useEffect(() => {
-		const screenHeight = window.innerHeight;
-		const desiredHeight = 300;
-		const percentage = (desiredHeight / screenHeight) * 100;
-		timelinePanelRef.current?.resize(percentage);
-	}, []);
+        dispatch(DESIGN_LOAD, { payload: data });
+        setProjectName(data.name || "Untitled video");
+      } catch (err) {
+        console.error(err);
+        setError("Не удалось загрузить проект, используется mock-дизайн.");
+        dispatch(DESIGN_LOAD, { payload: design });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-	const handleTimelineResize = () => {
-		const timelineContainer = document.getElementById("timeline-container");
-		if (!timelineContainer) return;
+    fetchProject();
+  }, [id, tempId]);
 
-		timeline?.resize(
-			{
-				height: timelineContainer.clientHeight - 90,
-				width: timelineContainer.clientWidth - 40,
-			},
-			{
-				force: true,
-			},
-		);
+  useEffect(() => {
+    setCompactFonts(getCompactFontData(FONTS));
+    setFonts(FONTS);
+  }, []);
 
-		// Trigger zoom recalculation when timeline is resized
-		setTimeout(() => {
-			sceneRef.current?.recalculateZoom();
-		}, 100);
-	};
+  useEffect(() => {
+    loadFonts([
+      {
+        name: SECONDARY_FONT,
+        url: SECONDARY_FONT_URL,
+      },
+    ]);
+  }, []);
 
-	useEffect(() => {
-		const onResize = () => handleTimelineResize();
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, [timeline]);
+  useEffect(() => {
+    const screenHeight = window.innerHeight;
+    const desiredHeight = 300;
+    const percentage = (desiredHeight / screenHeight) * 100;
+    timelinePanelRef.current?.resize(percentage);
+  }, []);
 
-	useEffect(() => {
-		if (activeIds.length === 1) {
-			const [id] = activeIds;
-			const trackItem = trackItemsMap[id];
-			if (trackItem) {
-				setTrackItem(trackItem);
-				setLayoutTrackItem(trackItem);
-			} else console.log(transitionsMap[id]);
-		} else {
-			setTrackItem(null);
-			setLayoutTrackItem(null);
-		}
-	}, [activeIds, trackItemsMap]);
+  const handleTimelineResize = () => {
+    const timelineContainer = document.getElementById("timeline-container");
+    if (!timelineContainer) return;
 
-	useEffect(() => {
-		setFloatingControl("");
-		setLabelControlItem("");
-		setTypeControlItem("");
-	}, [isLargeScreen]);
+    timeline?.resize(
+      {
+        height: timelineContainer.clientHeight - 90,
+        width: timelineContainer.clientWidth - 40,
+      },
+      {
+        force: true,
+      }
+    );
 
-	useEffect(() => {
-		setLoaded(true);
-	}, []);
+    // Trigger zoom recalculation when timeline is resized
+    setTimeout(() => {
+      sceneRef.current?.recalculateZoom();
+    }, 100);
+  };
 
-	return (
-		<div className="flex h-screen w-screen flex-col">
-			<Navbar
-				projectName={projectName}
-				user={null}
-				stateManager={stateManager}
-				setProjectName={setProjectName}
-			/>
-			<div className="flex flex-1">
-				{isLargeScreen && (
-					<div className="bg-muted  flex flex-none border-r border-border/80 h-[calc(100vh-44px)]">
-						<MenuList />
-						<MenuItem />
-					</div>
-				)}
-				<ResizablePanelGroup style={{ flex: 1 }} direction="vertical">
-					<ResizablePanel className="relative" defaultSize={70}>
-						<FloatingControl />
-						<div className="flex h-full flex-1">
-							{/* Sidebar only on large screens - conditionally mounted */}
+  useEffect(() => {
+    const onResize = () => handleTimelineResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [timeline]);
 
-							<div
-								style={{
-									width: "100%",
-									height: "100%",
-									position: "relative",
-									flex: 1,
-									overflow: "hidden",
-								}}
-							>
-								<CropModal />
-								<Scene ref={sceneRef} stateManager={stateManager} />
-							</div>
-						</div>
-					</ResizablePanel>
-					<ResizableHandle />
-					<ResizablePanel
-						className="min-h-[50px]"
-						ref={timelinePanelRef}
-						defaultSize={30}
-						onResize={handleTimelineResize}
-					>
-						{playerRef && <Timeline stateManager={stateManager} />}
-					</ResizablePanel>
-					{!isLargeScreen && !trackItem && loaded && <MenuListHorizontal />}
-					{!isLargeScreen && trackItem && <ControlItemHorizontal />}
-				</ResizablePanelGroup>
-				<ControlItem />
-			</div>
-		</div>
-	);
+  useEffect(() => {
+    if (activeIds.length === 1) {
+      const [id] = activeIds;
+      const trackItem = trackItemsMap[id];
+      if (trackItem) {
+        setTrackItem(trackItem);
+        setLayoutTrackItem(trackItem);
+      } else console.log(transitionsMap[id]);
+    } else {
+      setTrackItem(null);
+      setLayoutTrackItem(null);
+    }
+  }, [activeIds, trackItemsMap]);
+
+  useEffect(() => {
+    setFloatingControl("");
+    setLabelControlItem("");
+    setTypeControlItem("");
+  }, [isLargeScreen]);
+
+  useEffect(() => {
+    setLoaded(true);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center text-muted-foreground">
+        Загрузка проекта...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center text-destructive">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen w-screen flex-col">
+      <Navbar
+        projectName={projectName}
+        user={null}
+        stateManager={stateManager}
+        setProjectName={setProjectName}
+      />
+      <div className="flex flex-1">
+        {isLargeScreen && (
+          <div className="bg-muted flex flex-none border-r border-border/80 h-[calc(100vh-44px)]">
+            <MenuList />
+            <MenuItem />
+          </div>
+        )}
+        <ResizablePanelGroup style={{ flex: 1 }} direction="vertical">
+          <ResizablePanel className="relative" defaultSize={70}>
+            <FloatingControl />
+            <div className="flex h-full flex-1">
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  position: "relative",
+                  flex: 1,
+                  overflow: "hidden",
+                }}
+              >
+                <CropModal />
+                <Scene ref={sceneRef} stateManager={stateManager} />
+              </div>
+            </div>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel
+            className="min-h-[50px]"
+            ref={timelinePanelRef}
+            defaultSize={30}
+            onResize={handleTimelineResize}
+          >
+            {playerRef && <Timeline stateManager={stateManager} />}
+          </ResizablePanel>
+          {!isLargeScreen && !trackItem && loaded && <MenuListHorizontal />}
+          {!isLargeScreen && trackItem && <ControlItemHorizontal />}
+        </ResizablePanelGroup>
+        <ControlItem />
+      </div>
+    </div>
+  );
 };
 
 export default Editor;
