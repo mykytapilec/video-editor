@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { ADD_AUDIO, ADD_IMAGE, ADD_VIDEO } from "@designcombo/state";
 import { dispatch } from "@designcombo/events";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,7 +8,7 @@ import {
   Image as ImageIcon,
   Video as VideoIcon,
   Loader2,
-  UploadIcon
+  UploadIcon,
 } from "lucide-react";
 import { generateId } from "@designcombo/timeline";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,25 @@ export const Uploads = () => {
   const { setShowUploadModal, uploads, pendingUploads, activeUploads } =
     useUploadStore();
 
-  // Group completed uploads by type
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLoadGroups = async () => {
+    setLoadingGroups(true);
+    setError(null);
+    try {
+      const response = await fetch("http://localhost:3001/groups");
+      if (!response.ok) throw new Error("Failed to fetch groups");
+      const data = await response.json();
+      setGroups(data);
+    } catch (err: any) {
+      setError(err.message || "Error loading groups");
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
   const videos = uploads.filter(
     (upload) => upload.type?.startsWith("video/") || upload.type === "video"
   );
@@ -35,18 +54,13 @@ export const Uploads = () => {
     dispatch(ADD_VIDEO, {
       payload: {
         id: generateId(),
-        details: {
-          src: srcVideo
-        },
+        details: { src: srcVideo },
         metadata: {
           previewUrl:
-            "https://cdn.designcombo.dev/caption_previews/static_preset1.webp"
-        }
+            "https://cdn.designcombo.dev/caption_previews/static_preset1.webp",
+        },
       },
-      options: {
-        resourceId: "main",
-        scaleMode: "fit"
-      }
+      options: { resourceId: "main", scaleMode: "fit" },
     });
   };
 
@@ -57,16 +71,11 @@ export const Uploads = () => {
       payload: {
         id: generateId(),
         type: "image",
-        display: {
-          from: 0,
-          to: 5000
-        },
-        details: {
-          src: srcImage
-        },
-        metadata: {}
+        display: { from: 0, to: 5000 },
+        details: { src: srcImage },
+        metadata: {},
       },
-      options: {}
+      options: {},
     });
   };
 
@@ -76,23 +85,37 @@ export const Uploads = () => {
       payload: {
         id: generateId(),
         type: "audio",
-        details: {
-          src: srcAudio
-        },
-        metadata: {}
+        details: { src: srcAudio },
+        metadata: {},
       },
-      options: {}
+      options: {},
     });
   };
 
   const UploadPrompt = () => (
-    <div className="flex items-center justify-center px-4">
+    <div className="flex flex-col items-center justify-center px-4 gap-2">
       <Button
         className="w-full cursor-pointer"
         onClick={() => setShowUploadModal(true)}
       >
         <UploadIcon className="w-4 h-4" />
         <span className="ml-2">Upload</span>
+      </Button>
+
+      <Button
+        className="w-full cursor-pointer"
+        variant="secondary"
+        onClick={handleLoadGroups}
+        disabled={loadingGroups}
+      >
+        {loadingGroups ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="ml-2">Loading...</span>
+          </>
+        ) : (
+          "Load Groups"
+        )}
       </Button>
     </div>
   );
@@ -105,7 +128,31 @@ export const Uploads = () => {
       <ModalUpload />
       <UploadPrompt />
 
-      {/* Uploads in Progress Section */}
+      {error && <div className="text-red-500 text-xs px-4 mt-2">{error}</div>}
+
+      {groups.length > 0 && (
+        <div className="px-4 mt-4">
+          <h3 className="text-sm font-medium mb-2">Loaded Groups:</h3>
+          <div className="flex flex-col gap-1 text-xs">
+            {groups.map((g, idx) => (
+              <div
+                key={idx}
+                className="border p-2 rounded bg-muted text-foreground cursor-pointer hover:bg-accent"
+              >
+                {g.name ? (
+                  <div className="font-medium">{g.name}</div>
+                ) : (
+                  <div className="italic text-muted-foreground">Unnamed Group</div>
+                )}
+                <pre className="text-[10px] text-muted-foreground overflow-x-auto mt-1">
+                  {JSON.stringify(g, null, 2)}
+                </pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {(pendingUploads.length > 0 || activeUploads.length > 0) && (
         <div className="p-4">
           <div className="font-medium text-sm mb-2 flex items-center gap-2">
