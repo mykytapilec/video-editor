@@ -1,9 +1,13 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:3001/groups';
+const API_URL = "http://localhost:3001";
 
-export const getGroups = () => axios.get(API_URL);
-export const getGroupById = (id: number) => axios.get(`${API_URL}/${id}`);
-export const createGroup = (data: any) => axios.post(API_URL, data);
-export const updateGroup = (id: number, data: any) => axios.put(`${API_URL}/${id}`, data);
-export const deleteGroup = (id: number) => axios.delete(`${API_URL}/${id}`);
+export const getGroups = async () => {
+  const res = await axios.get(`${API_URL}/groups`);
+  return res.data;
+};
+
+export const getGroupById = async (id: string) => {
+  const res = await axios.get(`${API_URL}/groups/${id}`);
+  return res.data;
+};

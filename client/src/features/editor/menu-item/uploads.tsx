@@ -1,282 +1,69 @@
+"use client";
+
 import React, { useState } from "react";
-import { ADD_AUDIO, ADD_IMAGE, ADD_VIDEO } from "@designcombo/state";
-import { dispatch } from "@designcombo/events";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
-import {
-  Music,
-  Image as ImageIcon,
-  Video as VideoIcon,
-  Loader2,
-  UploadIcon,
-} from "lucide-react";
-import { generateId } from "@designcombo/timeline";
 import { Button } from "@/components/ui/button";
-import useUploadStore from "../store/use-upload-store";
-import ModalUpload from "@/components/modal-upload";
+import { getGroups, getGroupById } from "@/api/groups";
 
 export const Uploads = () => {
-  const { setShowUploadModal, uploads, pendingUploads, activeUploads } =
-    useUploadStore();
-
   const [groups, setGroups] = useState<any[]>([]);
-  const [loadingGroups, setLoadingGroups] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
   const handleLoadGroups = async () => {
-    setLoadingGroups(true);
-    setError(null);
     try {
-      const response = await fetch("http://localhost:3001/groups");
-      if (!response.ok) throw new Error("Failed to fetch groups");
-      const data = await response.json();
+      setLoading(true);
+      const data = await getGroups();
       setGroups(data);
-    } catch (err: any) {
-      setError(err.message || "Error loading groups");
+    } catch (err) {
+      console.error("Error loading groups:", err);
     } finally {
-      setLoadingGroups(false);
+      setLoading(false);
     }
   };
 
-  const videos = uploads.filter(
-    (upload) => upload.type?.startsWith("video/") || upload.type === "video"
-  );
-  const images = uploads.filter(
-    (upload) => upload.type?.startsWith("image/") || upload.type === "image"
-  );
-  const audios = uploads.filter(
-    (upload) => upload.type?.startsWith("audio/") || upload.type === "audio"
-  );
-
-  const handleAddVideo = (video: any) => {
-    const srcVideo = video.metadata?.uploadedUrl || video.url;
-
-    dispatch(ADD_VIDEO, {
-      payload: {
-        id: generateId(),
-        details: { src: srcVideo },
-        metadata: {
-          previewUrl:
-            "https://cdn.designcombo.dev/caption_previews/static_preset1.webp",
-        },
-      },
-      options: { resourceId: "main", scaleMode: "fit" },
-    });
+  const handleSelectGroup = async (id: string) => {
+    try {
+      const group = await getGroupById(id);
+      setSelectedGroup(group);
+      console.log("Selected group:", group);
+      // TODO: потом добавим логику загрузки интервалов в таймлайн
+    } catch (err) {
+      console.error("Error loading group:", err);
+    }
   };
-
-  const handleAddImage = (image: any) => {
-    const srcImage = image.metadata?.uploadedUrl || image.url;
-
-    dispatch(ADD_IMAGE, {
-      payload: {
-        id: generateId(),
-        type: "image",
-        display: { from: 0, to: 5000 },
-        details: { src: srcImage },
-        metadata: {},
-      },
-      options: {},
-    });
-  };
-
-  const handleAddAudio = (audio: any) => {
-    const srcAudio = audio.metadata?.uploadedUrl || audio.url;
-    dispatch(ADD_AUDIO, {
-      payload: {
-        id: generateId(),
-        type: "audio",
-        details: { src: srcAudio },
-        metadata: {},
-      },
-      options: {},
-    });
-  };
-
-  const UploadPrompt = () => (
-    <div className="flex flex-col items-center justify-center px-4 gap-2">
-      <Button
-        className="w-full cursor-pointer"
-        onClick={() => setShowUploadModal(true)}
-      >
-        <UploadIcon className="w-4 h-4" />
-        <span className="ml-2">Upload</span>
-      </Button>
-
-      <Button
-        className="w-full cursor-pointer"
-        variant="secondary"
-        onClick={handleLoadGroups}
-        disabled={loadingGroups}
-      >
-        {loadingGroups ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="ml-2">Loading...</span>
-          </>
-        ) : (
-          "Load Groups"
-        )}
-      </Button>
-    </div>
-  );
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="text-text-primary flex h-12 flex-none items-center px-4 text-sm font-medium">
-        Your uploads
+    <div className="p-4 flex flex-col gap-4">
+      <div>
+        <Button onClick={handleLoadGroups} disabled={loading}>
+          {loading ? "Loading..." : "Load Groups"}
+        </Button>
       </div>
-      <ModalUpload />
-      <UploadPrompt />
-
-      {error && <div className="text-red-500 text-xs px-4 mt-2">{error}</div>}
 
       {groups.length > 0 && (
-        <div className="px-4 mt-4">
-          <h3 className="text-sm font-medium mb-2">Loaded Groups:</h3>
-          <div className="flex flex-col gap-1 text-xs">
-            {groups.map((g, idx) => (
-              <div
-                key={idx}
-                className="border p-2 rounded bg-muted text-foreground cursor-pointer hover:bg-accent"
-              >
-                {g.name ? (
-                  <div className="font-medium">{g.name}</div>
-                ) : (
-                  <div className="italic text-muted-foreground">Unnamed Group</div>
-                )}
-                <pre className="text-[10px] text-muted-foreground overflow-x-auto mt-1">
-                  {JSON.stringify(g, null, 2)}
-                </pre>
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col gap-2">
+          {groups.map((group) => (
+            <Button
+              key={group.id}
+              variant={selectedGroup?.id === group.id ? "default" : "outline"}
+              onClick={() => handleSelectGroup(group.id)}
+            >
+              {group.name || `Group ${group.id}`}
+            </Button>
+          ))}
         </div>
       )}
 
-      {(pendingUploads.length > 0 || activeUploads.length > 0) && (
-        <div className="p-4">
-          <div className="font-medium text-sm mb-2 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            Uploads in Progress
-          </div>
-          <div className="flex flex-col gap-2">
-            {pendingUploads.map((upload) => (
-              <div key={upload.id} className="flex items-center gap-2">
-                <span className="truncate text-xs flex-1">
-                  {upload.file?.name || upload.url || "Unknown"}
-                </span>
-                <span className="text-xs text-muted-foreground">Pending</span>
-              </div>
-            ))}
-            {activeUploads.map((upload) => (
-              <div key={upload.id} className="flex items-center gap-2">
-                <span className="truncate text-xs flex-1">
-                  {upload.file?.name || upload.url || "Unknown"}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-                  <span className="text-xs">{upload.progress ?? 0}%</span>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {upload.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+      {selectedGroup && (
+        <div className="mt-4 border p-3 rounded-md bg-muted text-sm">
+          <h3 className="font-semibold mb-2">Selected group:</h3>
+          <pre className="overflow-auto max-h-60">
+            {JSON.stringify(selectedGroup, null, 2)}
+          </pre>
         </div>
       )}
-
-      <div className="flex flex-col gap-10 p-4">
-        {/* Videos Section */}
-        {videos.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <VideoIcon className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Videos</span>
-            </div>
-            <ScrollArea className="max-h-32">
-              <div className="grid grid-cols-3 gap-2 max-w-full">
-                {videos.map((video, idx) => (
-                  <div
-                    className="flex items-center gap-2 flex-col w-full"
-                    key={video.id || idx}
-                  >
-                    <Card
-                      className="w-16 h-16 flex items-center justify-center overflow-hidden relative cursor-pointer"
-                      onClick={() => handleAddVideo(video)}
-                    >
-                      <VideoIcon className="w-8 h-8 text-muted-foreground" />
-                    </Card>
-                    <div className="text-xs text-muted-foreground truncate w-full text-center">
-                      {video.file?.name || video.url || "Video"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
-
-        {/* Images Section */}
-        {images.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <ImageIcon className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Images</span>
-            </div>
-            <ScrollArea className="max-h-32">
-              <div className="grid grid-cols-3 gap-2 max-w-full">
-                {images.map((image, idx) => (
-                  <div
-                    className="flex items-center gap-2 flex-col w-full"
-                    key={image.id || idx}
-                  >
-                    <Card
-                      className="w-16 h-16 flex items-center justify-center overflow-hidden relative cursor-pointer"
-                      onClick={() => handleAddImage(image)}
-                    >
-                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    </Card>
-                    <div className="text-xs text-muted-foreground truncate w-full text-center">
-                      {image.file?.name || image.url || "Image"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
-
-        {/* Audios Section */}
-        {audios.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Music className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Audios</span>
-            </div>
-            <ScrollArea className="max-h-32">
-              <div className="grid grid-cols-3 gap-2 max-w-full">
-                {audios.map((audio, idx) => (
-                  <div
-                    className="flex items-center gap-2 flex-col w-full"
-                    key={audio.id || idx}
-                  >
-                    <Card
-                      className="w-16 h-16 flex items-center justify-center overflow-hidden relative cursor-pointer"
-                      onClick={() => handleAddAudio(audio)}
-                    >
-                      <Music className="w-8 h-8 text-muted-foreground" />
-                    </Card>
-                    <div className="text-xs text-muted-foreground truncate w-full text-center">
-                      {audio.file?.name || audio.url || "Audio"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
+
+export default Uploads;
