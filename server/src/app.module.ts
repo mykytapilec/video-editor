@@ -7,6 +7,7 @@ import {
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 import { GroupsModule } from './groups/groups.module';
+import { VideosModule } from './videos/videos.module';
 
 const envValidationSchema: Joi.ObjectSchema<Record<string, unknown>> =
   Joi.object({
@@ -20,6 +21,7 @@ const envValidationSchema: Joi.ObjectSchema<Record<string, unknown>> =
 @Module({
   imports: [
     GroupsModule,
+    VideosModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
