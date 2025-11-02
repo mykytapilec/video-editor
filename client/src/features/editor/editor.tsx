@@ -1,5 +1,5 @@
 "use client";
-import Timeline from "./timeline";
+import Timeline from "./components/Timeline";
 import useStore from "./store/use-store";
 import Navbar from "./navbar";
 import useTimelineEvents from "./hooks/use-timeline-events";
