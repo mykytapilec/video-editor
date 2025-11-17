@@ -3,16 +3,36 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getGroups, getGroupById } from "@/api/groups";
+import useStore from "@/features/editor/store/use-store";
 
 export const Uploads = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
+  const setState = useStore((state) => state.setState);
+
   const handleLoadGroups = async () => {
     try {
       setLoading(true);
       const data = await getGroups();
+
+      const trackItems: Record<string, any> = {};
+      data.forEach((g: any) => {
+        trackItems[g.id] = {
+          id: g.id,
+          name: g.name,
+          start: g.start || 0,
+          end: g.end || 100,
+        };
+      });
+
+      setState({
+        trackItemsMap: trackItems,
+        trackItemIds: Object.keys(trackItems),
+        activeIds: [],
+      });
+
       setGroups(data);
     } catch (err) {
       console.error("Error loading groups:", err);

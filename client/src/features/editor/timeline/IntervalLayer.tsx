@@ -1,28 +1,24 @@
-"use client";
-
 import React from "react";
-
-const mockIntervals = [
-  { id: "E1", start: 10, end: 20 },
-  { id: "E2", start: 30, end: 45 },
-  { id: "E3", start: 50, end: 70 },
-];
+import useStore from "@/features/editor/store/use-store";
 
 export const IntervalLayer: React.FC = () => {
+  const trackItemsMap = useStore((state) => state.trackItemsMap);
+  const trackItems = Object.values(trackItemsMap);
+
   return (
     <div className="relative h-full w-full">
-      {mockIntervals.map((interval, index) => (
+      {trackItems.map((item: any) => (
         <div
-          key={interval.id}
+          key={item.id}
           className="absolute bg-blue-500/60 hover:bg-blue-400 text-xs text-white flex items-center justify-center rounded-md"
           style={{
-            left: `${interval.start}%`,
-            width: `${interval.end - interval.start}%`,
+            left: `${item.start}%`,
+            width: `${item.end - item.start}%`,
             height: "60%",
             top: "20%",
           }}
         >
-          {interval.id}
+          {item.name || item.id}
         </div>
       ))}
     </div>
