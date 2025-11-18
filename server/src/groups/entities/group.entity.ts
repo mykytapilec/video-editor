@@ -6,11 +6,14 @@ export class Group {
   id!: number;
 
   @Column()
-  name!: string;
+  idx!: number;
 
   @Column()
-  start!: number;
+  start!: string;
 
-  @Column()
-  end!: number;
+  @Column({ name: 'end' })
+  end!: string;
+
+  @Column('text')
+  text!: string;
 }

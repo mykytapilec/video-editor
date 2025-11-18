@@ -18,7 +18,9 @@ export class GroupsService {
   }
 
   async findAll(): Promise<Group[]> {
-    return this.groupRepository.find();
+    return this.groupRepository.find({
+      order: { idx: 'ASC' },
+    });
   }
 
   async findOne(id: number): Promise<Group> {

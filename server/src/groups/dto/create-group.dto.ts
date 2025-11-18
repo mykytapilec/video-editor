@@ -1,12 +1,15 @@
 import { IsString, IsNumber } from 'class-validator';
 
 export class CreateGroupDto {
+  @IsNumber()
+  idx!: number;
+
   @IsString()
-  name!: string;
+  start!: string;
 
-  @IsNumber()
-  start!: number;
+  @IsString()
+  end!: string;
 
-  @IsNumber()
-  end!: number;
+  @IsString()
+  text!: string;
 }
