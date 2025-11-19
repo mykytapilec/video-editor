@@ -36,6 +36,7 @@ export const Uploads: React.FC = () => {
           name: g.name,
           start: g.start,
           end: g.end,
+          type: "template",
         };
       });
 

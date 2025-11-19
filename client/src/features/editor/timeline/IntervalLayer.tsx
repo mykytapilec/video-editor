@@ -4,7 +4,9 @@ import { TrackItem } from "@/types";
 
 export const IntervalLayer: React.FC = () => {
   const trackItemsMap = useStore((s) => s.trackItemsMap);
-  const trackItems: TrackItem[] = Object.values(trackItemsMap);
+  const trackItems: TrackItem[] = Object.values(trackItemsMap).filter(
+    (i): i is TrackItem => i !== undefined && i !== null
+  );
 
   return (
     <div className="relative h-full w-full">

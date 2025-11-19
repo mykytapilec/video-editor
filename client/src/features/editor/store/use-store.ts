@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ITimelineStore } from "@/types";
+import { ITimelineStore, TrackItem, TimelineGroup } from "@/types";
 
 const useStore = create<ITimelineStore>((set) => ({
   playerRef: null,

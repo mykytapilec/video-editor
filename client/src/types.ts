@@ -11,18 +11,49 @@ export interface TimelineGroup {
   id: number;
   idx?: number;
   name: string | null;
-  start: number;
+  start: number; 
   end: number;
   text?: string;
 }
-
-export interface TrackItem {
+interface TrackItemBase {
   id: number;
   name: string | null;
   start: number;
   end: number;
+  duration?: number;
+}
+export interface VideoTrackItem extends TrackItemBase {
+  type: "video";
+  src?: string;
+}
+export interface ImageTrackItem extends TrackItemBase {
+  type: "image";
+  src?: string;
+}
+export interface TextTrackItem extends TrackItemBase {
+  type: "text" | "caption";
+  text?: string;
+}
+export interface AudioTrackItem extends TrackItemBase {
+  type: "audio";
+  src?: string;
+  volume?: number;
+}
+export interface ShapeTrackItem extends TrackItemBase {
+  type: "shape" | "rect" | "progressBar" | "progressSquare" | "progressFrame";
+}
+export interface TemplateTrackItem extends TrackItemBase {
+  type: "template";
   [key: string]: any;
 }
+
+export type TrackItem =
+  | VideoTrackItem
+  | ImageTrackItem
+  | TextTrackItem
+  | AudioTrackItem
+  | ShapeTrackItem
+  | TemplateTrackItem;
 
 export interface Background {
   type: "color" | "image";
@@ -33,7 +64,6 @@ export interface Size {
   width: number;
   height: number;
 }
-
 export interface ITimelineStore {
   playerRef: React.RefObject<any> | null;
   setPlayerRef: (ref: React.RefObject<any> | null) => void;
@@ -47,7 +77,7 @@ export interface ITimelineStore {
   groupsLoaded?: boolean;
   selectedGroupId: number | null;
   setSelectedGroupId: (id: number | null) => void;
-  trackItemsMap: Record<number, TrackItem>;
+  trackItemsMap: Record<number, TrackItem | undefined>;
   trackItemIds: number[];
   activeIds: number[];
   setState: (partial: Partial<ITimelineStore>) => void;
