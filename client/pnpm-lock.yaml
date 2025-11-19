@@ -212,6 +212,9 @@ importers:
       react-markdown:
         specifier: '10'
         version: 10.1.0(@types/react@19.1.4)(react@19.1.0)
+      react-resizable:
+        specifier: ^3.0.5
+        version: 3.0.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-resizable-panels:
         specifier: ^3.0.2
         version: 3.0.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -267,6 +270,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.17
         version: 4.17.17
+      '@types/react-resizable':
+        specifier: ^3.0.8
+        version: 3.0.8
       '@types/tinycolor2':
         specifier: ^1.4.6
         version: 1.4.6
@@ -2156,6 +2162,9 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@types/react-resizable@3.0.8':
+    resolution: {integrity: sha512-Pcvt2eGA7KNXldt1hkhVhAgZ8hK41m0mp89mFgQi7LAAEZiaLgm4fHJ5zbJZ/4m2LVaAyYrrRRv1LHDcrGQanA==}
+
   '@types/react-syntax-highlighter@15.5.13':
     resolution: {integrity: sha512-uLGJ87j6Sz8UaBAooU0T6lWJ0dBmjZgN1PZTrj05TNql2/XpC6+4HhMT5syIdFUUt+FASfCeLLv4kBygNU+8qA==}
 
@@ -3817,6 +3826,11 @@ packages:
     peerDependencies:
       react: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+
+  react-resizable@3.0.5:
+    resolution: {integrity: sha512-vKpeHhI5OZvYn82kXOs1bC8aOXktGU5AmKAgaZS4F5JPburCtbmDPqE7Pzp+1kN4+Wb81LlF33VpGwWwtXem+w==}
+    peerDependencies:
+      react: '>= 16.3'
 
   react-style-singleton@2.2.3:
     resolution: {integrity: sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==}
@@ -6294,6 +6308,10 @@ snapshots:
     dependencies:
       '@types/react': 19.1.4
 
+  '@types/react-resizable@3.0.8':
+    dependencies:
+      '@types/react': 19.1.4
+
   '@types/react-syntax-highlighter@15.5.13':
     dependencies:
       '@types/react': 19.1.4
@@ -8262,6 +8280,14 @@ snapshots:
     dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+
+  react-resizable@3.0.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    dependencies:
+      prop-types: 15.8.1
+      react: 19.1.0
+      react-draggable: 4.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+    transitivePeerDependencies:
+      - react-dom
 
   react-style-singleton@2.2.3(@types/react@19.1.4)(react@19.1.0):
     dependencies:

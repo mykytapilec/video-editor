@@ -4,36 +4,47 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getGroups, getGroupById } from "@/api/groups";
 import useStore from "@/features/editor/store/use-store";
+import { parseTimestamp } from "@/utils/parseTimestamp";
+import { TimelineGroup, TrackItem } from "@/types";
 
-export const Uploads = () => {
-  const [groups, setGroups] = useState<any[]>([]);
+export const Uploads: React.FC = () => {
+  const groups = useStore((s) => s.groups);
+  const selectedGroupId = useStore((s) => s.selectedGroupId);
+  const setSelectedGroupId = useStore((s) => s.setSelectedGroupId);
+  const setState = useStore((s) => s.setState);
+
   const [loading, setLoading] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
-
-  const setState = useStore((state) => state.setState);
 
   const handleLoadGroups = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await getGroups();
+      const data: any[] = await getGroups();
 
-      const trackItems: Record<string, any> = {};
-      data.forEach((g: any) => {
+      const parsedGroups: TimelineGroup[] = data.map((g) => ({
+        id: g.id,
+        idx: g.idx,
+        name: g.name ?? null,
+        start: parseTimestamp(g.start),
+        end: parseTimestamp(g.end),
+        text: g.text,
+      }));
+
+      const trackItems: Record<number, TrackItem> = {};
+      parsedGroups.forEach((g) => {
         trackItems[g.id] = {
           id: g.id,
           name: g.name,
-          start: g.start || 0,
-          end: g.end || 100,
+          start: g.start,
+          end: g.end,
         };
       });
 
       setState({
+        groups: parsedGroups,
         trackItemsMap: trackItems,
-        trackItemIds: Object.keys(trackItems),
+        trackItemIds: parsedGroups.map((g) => g.id),
         activeIds: [],
       });
-
-      setGroups(data);
     } catch (err) {
       console.error("Error loading groups:", err);
     } finally {
@@ -41,12 +52,11 @@ export const Uploads = () => {
     }
   };
 
-  const handleSelectGroup = async (id: string) => {
+  const handleSelectGroup = async (id: number) => {
     try {
-      const group = await getGroupById(id);
-      setSelectedGroup(group);
+      const group = await getGroupById(String(id)); 
+      setSelectedGroupId(group.id); 
       console.log("Selected group:", group);
-      // TODO
     } catch (err) {
       console.error("Error loading group:", err);
     }
@@ -65,7 +75,7 @@ export const Uploads = () => {
           {groups.map((group) => (
             <Button
               key={group.id}
-              variant={selectedGroup?.id === group.id ? "default" : "outline"}
+              variant={selectedGroupId === group.id ? "default" : "outline"}
               onClick={() => handleSelectGroup(group.id)}
             >
               {group.name || `Group ${group.id}`}
@@ -74,11 +84,11 @@ export const Uploads = () => {
         </div>
       )}
 
-      {selectedGroup && (
+      {selectedGroupId !== null && (
         <div className="mt-4 border p-3 rounded-md bg-muted text-sm">
           <h3 className="font-semibold mb-2">Selected group:</h3>
           <pre className="overflow-auto max-h-60">
-            {JSON.stringify(selectedGroup, null, 2)}
+            {JSON.stringify(groups.find((g) => g.id === selectedGroupId), null, 2)}
           </pre>
         </div>
       )}

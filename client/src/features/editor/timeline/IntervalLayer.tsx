@@ -1,13 +1,14 @@
 import React from "react";
 import useStore from "@/features/editor/store/use-store";
+import { TrackItem } from "@/types";
 
 export const IntervalLayer: React.FC = () => {
-  const trackItemsMap = useStore((state) => state.trackItemsMap);
-  const trackItems = Object.values(trackItemsMap);
+  const trackItemsMap = useStore((s) => s.trackItemsMap);
+  const trackItems: TrackItem[] = Object.values(trackItemsMap);
 
   return (
     <div className="relative h-full w-full">
-      {trackItems.map((item: any) => (
+      {trackItems.map((item) => (
         <div
           key={item.id}
           className="absolute bg-blue-500/60 hover:bg-blue-400 text-xs text-white flex items-center justify-center rounded-md"
@@ -18,7 +19,7 @@ export const IntervalLayer: React.FC = () => {
             top: "20%",
           }}
         >
-          {item.name || item.id}
+          {item.name}
         </div>
       ))}
     </div>

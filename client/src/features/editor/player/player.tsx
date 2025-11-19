@@ -1,27 +1,39 @@
-import { useEffect, useRef } from "react";
+"use client";
+
+import React, { useEffect, useRef } from "react";
 import Composition from "./composition";
 import { Player as RemotionPlayer, PlayerRef } from "@remotion/player";
 import useStore from "../store/use-store";
 
-const Player = () => {
-  const playerRef = useRef<PlayerRef>(null);
-  const { setPlayerRef, duration, fps, size, background } = useStore();
+const Player: React.FC = () => {
+  const playerRef = useRef<PlayerRef | null>(null);
+  const { setPlayerRef, duration, fps, size, background } = useStore((s) => ({
+    setPlayerRef: s.setPlayerRef,
+    duration: s.duration,
+    fps: s.fps,
+    size: s.size,
+    background: s.background,
+  }));
 
   useEffect(() => {
     setPlayerRef(playerRef as React.RefObject<PlayerRef>);
-  }, []);
+    return () => setPlayerRef(null);
+  }, [setPlayerRef]);
 
   return (
-    <RemotionPlayer
-      ref={playerRef}
-      component={Composition}
-      durationInFrames={Math.round((duration / 1000) * fps) || 1}
-      compositionWidth={size.width}
-      compositionHeight={size.height}
-      className={`h-full w-full bg-[${background.value}]`}
-      fps={30}
-      overflowVisible
-    />
+    <div className="w-full h-full">
+      <RemotionPlayer
+        ref={playerRef as any}
+        component={Composition as any}
+        durationInFrames={Math.max(1, Math.round((duration / 1000) * fps))}
+        compositionWidth={size.width}
+        compositionHeight={size.height}
+        fps={fps}
+        style={{ width: "100%", height: "100%" }}
+        autoPlay={false}
+      />
+    </div>
   );
 };
+
 export default Player;
