@@ -1,50 +1,22 @@
-// client/src/features/editor/menu-item/uploads.tsx
-"use client";
-
-import React, { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Video as VideoIcon } from "lucide-react";
-import useStore from "@/features/editor/store/use-store";
+import React from "react";
+import useUploadStore from "@/features/editor/store/use-upload-store";
 import ModalUpload from "@/components/modal-upload";
+import { Button } from "@/components/ui/button";
 
-const Uploads: React.FC = () => {
-  const addVideoTrackItem = useStore((s) => s.addVideoTrackItem);
+const UploadMenuItem: React.FC = () => {
+  const { setShowUploadModal, showUploadModal } = useUploadStore();
 
-  useEffect(() => {
-    const handler = (video: { url: string }) => {
-      addVideoTrackItem(video.url, {
-        start: 0,
-        end: 10,
-        name: video.url.split("/").pop() || "Uploaded Video",
-      });
-    };
-
-    window.addEventListener("videoSelected", (ev: any) => handler(ev.detail));
-
-    return () => {
-      window.removeEventListener("videoSelected", (ev: any) => handler(ev.detail));
-    };
-  }, [addVideoTrackItem]);
+  const openModal = () => setShowUploadModal(true);
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="text-text-primary flex h-12 flex-none items-center px-4 text-sm font-medium">
-        Your uploads
-      </div>
+    <>
+      <Button variant="outline" size="sm" onClick={openModal}>
+        Upload
+      </Button>
 
-      <ModalUpload />
-
-      <div className="flex items-center justify-center px-4 mb-4">
-        <Button className="w-full cursor-pointer" onClick={() => {
-          const event = new CustomEvent("openUploadModal");
-          window.dispatchEvent(event);
-        }}>
-          <VideoIcon className="w-4 h-4" />
-          <span className="ml-2">Upload</span>
-        </Button>
-      </div>
-    </div>
+      {showUploadModal && <ModalUpload />}
+    </>
   );
 };
 
-export default Uploads;
+export default UploadMenuItem;

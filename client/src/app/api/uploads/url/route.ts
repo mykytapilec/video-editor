@@ -23,61 +23,41 @@ export async function POST(request: NextRequest) {
     const body: UploadUrlRequest = await request.json();
     const { userId, urls } = body;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 }
-      );
-    }
+    if (!userId) return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    if (!urls?.length) return NextResponse.json({ error: "urls array is required" }, { status: 400 });
 
-    if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      return NextResponse.json(
-        { error: "urls array is required and must not be empty" },
-        { status: 400 }
-      );
-    }
+    let externalData: ExternalUploadsResponse | null = null;
 
-    // Call external upload service
-    const externalResponse = await fetch(
-      "https://upload-file-j43uyuaeza-uc.a.run.app/url",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userId,
-          urls
-        })
-      }
-    );
-
-    if (!externalResponse.ok) {
-      const errorData = await externalResponse.json();
-      return NextResponse.json(
+    try {
+      const externalResponse = await fetch(
+        "https://upload-file-j43uyuaeza-uc.a.run.app/url",
         {
-          error: "External upload service failed",
-          details: errorData
-        },
-        { status: externalResponse.status }
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, urls }),
+        }
       );
+
+      const text = await externalResponse.text();
+      try {
+        externalData = JSON.parse(text);
+      } catch {
+        return NextResponse.json(
+          { error: "External upload returned invalid JSON", details: text.slice(0, 200) },
+          { status: externalResponse.status }
+        );
+      }
+
+      if (!externalResponse.ok) {
+        return NextResponse.json({ error: "External upload failed", details: externalData }, { status: externalResponse.status });
+      }
+    } catch (err) {
+      return NextResponse.json({ error: "Failed to connect to external upload service", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
 
-    const externalData: ExternalUploadsResponse = await externalResponse.json();
-    const { uploads = [] } = externalData;
-
-    return NextResponse.json({
-      success: true,
-      uploads: uploads
-    });
+    return NextResponse.json({ success: true, uploads: externalData?.uploads ?? [] });
   } catch (error) {
-    console.error("Error in upload URL route:", error);
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    );
+    console.error("Upload URL route error:", error);
+    return NextResponse.json({ error: "Internal server error", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
