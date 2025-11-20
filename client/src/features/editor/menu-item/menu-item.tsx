@@ -8,7 +8,7 @@ import { Videos } from "./videos";
 import { Captions } from "./captions";
 import { VoiceOver } from "./voice-over";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
-import { Uploads } from "./uploads";
+import Uploads from "./uploads";
 import { AiVoice } from "./ai-voice";
 
 const ActiveMenuItem = () => {

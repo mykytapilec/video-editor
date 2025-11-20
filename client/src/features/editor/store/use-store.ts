@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { ITimelineStore, TrackItem, TimelineGroup } from "@/types";
+import { ITimelineStore, VideoTrackItem } from "@/types";
 
-const useStore = create<ITimelineStore>((set) => ({
+const useStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
   setPlayerRef: (ref) => set({ playerRef: ref }),
 
@@ -22,13 +22,35 @@ const useStore = create<ITimelineStore>((set) => ({
   trackItemIds: [],
   activeIds: [],
 
+  currentVideoSrc: null,
+  setCurrentVideoSrc: (src: string | null) => set({ currentVideoSrc: src }),
+
+  currentTime: 0,
+  setCurrentTime: (t: number) => set({ currentTime: t }),
+
   setState: (partial) =>
-    set((prev) => {
-      return {
-        ...prev,
-        ...(partial as Partial<ITimelineStore>),
-      };
-    }),
+    set((prev) => ({
+      ...prev,
+      ...(partial as Partial<ITimelineStore>),
+    })),
+
+  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => {
+    const id = Date.now();
+    const defaultItem: VideoTrackItem = {
+      id,
+      name: opts?.name ?? `Video ${id}`,
+      start: opts?.start ?? 0,
+      end: opts?.end ?? 5,
+      duration: opts?.duration ?? 5,
+      type: "video",
+      src,
+    };
+    set((prev) => ({
+      trackItemsMap: { ...prev.trackItemsMap, [id]: defaultItem },
+      trackItemIds: [...prev.trackItemIds, id],
+    }));
+    return id;
+  },
 }));
 
 export default useStore;
