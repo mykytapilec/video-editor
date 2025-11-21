@@ -22,6 +22,9 @@ const useStore = create<ITimelineStore>((set, get) => ({
   trackItemIds: [],
   activeIds: [],
 
+  // setter for active ids
+  setActiveIds: (ids: number[]) => set({ activeIds: ids }),
+
   currentVideoSrc: null,
   setCurrentVideoSrc: (src: string | null) => set({ currentVideoSrc: src }),
 

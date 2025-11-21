@@ -95,6 +95,7 @@ export interface ITimelineStore {
   trackItemsMap: Record<number, TrackItem | undefined>;
   trackItemIds: number[];
   activeIds: number[];
+  setActiveIds?: (ids: number[]) => void;
 
   currentVideoSrc: string | null;
   setCurrentVideoSrc: (src: string | null) => void;

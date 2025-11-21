@@ -1,41 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   IAudio,
   ICaption,
   IImage,
   IText,
-  ITrackItem,
-  ITrackItemAndDetails,
-  IVideo
+  IVideo,
+  ITrackItemAndDetails
 } from "@designcombo/types";
-import { useEffect, useState } from "react";
+
 import BasicText from "./basic-text";
 import BasicImage from "./basic-image";
 import BasicVideo from "./basic-video";
 import BasicAudio from "./basic-audio";
-import useStore from "../store/use-store";
-import useLayoutStore from "../store/use-layout-store";
 import BasicCaption from "./basic-caption";
 import { LassoSelect } from "lucide-react";
 
+import useStore from "../store/use-store";
+import useLayoutStore from "../store/use-layout-store";
+import { useEditorStore } from "../store/use-editor-store";
+
 const Container = ({ children }: { children: React.ReactNode }) => {
-  const { activeIds, trackItemsMap, transitionsMap } = useStore();
-  const [trackItem, setTrackItem] = useState<ITrackItem | null>(null);
+  const { activeIds, trackItemsMap } = useStore(); // ONLY here
+  const [trackItem, setTrackItem] = useState<any>(null);
+
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
+  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
 
   useEffect(() => {
-    if (activeIds.length === 1) {
-      const [id] = activeIds;
-      const trackItem = trackItemsMap[id];
-      if (trackItem) {
-        setTrackItem(trackItem);
-        setLayoutTrackItem(trackItem);
-      } else console.log(transitionsMap[id]);
-    } else {
-      setTrackItem(null);
-      setLayoutTrackItem(null);
+    let item = null;
+
+    // 1. group selected → prefer
+    if (selectedGroupId) {
+      item = trackItemsMap[selectedGroupId] || null;
     }
-  }, [activeIds, trackItemsMap]);
+    // 2. fallback: normal item selection
+    else if (activeIds.length === 1) {
+      const [id] = activeIds;
+      item = trackItemsMap[id] || null;
+    }
+
+    setTrackItem(item);
+    setLayoutTrackItem(item);
+  }, [activeIds, trackItemsMap, selectedGroupId]);
 
   return (
     <div className="flex w-[272px] flex-none border-l border-border/80 bg-muted hidden lg:block">
@@ -46,11 +52,7 @@ const Container = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const ActiveControlItem = ({
-  trackItem
-}: {
-  trackItem?: ITrackItemAndDetails;
-}) => {
+const ActiveControlItem = ({ trackItem }: { trackItem?: ITrackItemAndDetails }) => {
   if (!trackItem) {
     return (
       <div className="pb-32 flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground h-[calc(100vh-58px)]">
@@ -59,18 +61,17 @@ const ActiveControlItem = ({
       </div>
     );
   }
+
   return (
     <>
       {
         {
-          text: <BasicText trackItem={trackItem as ITrackItem & IText} />,
-          caption: (
-            <BasicCaption trackItem={trackItem as ITrackItem & ICaption} />
-          ),
-          image: <BasicImage trackItem={trackItem as ITrackItem & IImage} />,
-          video: <BasicVideo trackItem={trackItem as ITrackItem & IVideo} />,
-          audio: <BasicAudio trackItem={trackItem as ITrackItem & IAudio} />
-        }[trackItem.type as "text"]
+          text: <BasicText trackItem={trackItem as any} />,
+          caption: <BasicCaption trackItem={trackItem as any} />,
+          image: <BasicImage trackItem={trackItem as any} />,
+          video: <BasicVideo trackItem={trackItem as any} />,
+          audio: <BasicAudio trackItem={trackItem as any} />
+        }[trackItem.type]
       }
     </>
   );

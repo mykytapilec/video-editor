@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export interface GroupItem {
-  id: string;
+  id: number;
   idx: number;
   text: string;
   start: number;
@@ -12,10 +12,13 @@ interface EditorStoreState {
   groups: GroupItem[];
   setGroups: (groups: GroupItem[]) => void;
   fetchGroups: () => Promise<void>;
+  selectedGroupId: number | null;
+  setSelectedGroupId: (id: number | null) => void;
 }
 
 export const useEditorStore = create<EditorStoreState>((set) => ({
   groups: [],
+  selectedGroupId: null,
 
   setGroups: (groups) => set({ groups }),
 
@@ -32,9 +35,19 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       }
 
       const data = await res.json();
-      set({ groups: data });
+
+      // Ensure ids are numbers (API returns number, but normalize just in case)
+      const normalized = (data || []).map((g: any) => ({
+        ...g,
+        id: typeof g.id === "string" ? Number(g.id) : g.id,
+        start: typeof g.start === "string" ? Number(g.start) : g.start,
+        end: typeof g.end === "string" ? Number(g.end) : g.end,
+      }));
+
+      set({ groups: normalized });
     } catch (e) {
       console.error("Groups fetch error:", e);
     }
   },
+  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 }));

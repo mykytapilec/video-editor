@@ -18,6 +18,7 @@ import { useIsLargeScreen } from "@/hooks/use-media-query";
 import { convertToITrackItem } from "@/utils/convertToITrackItem";
 import { SceneRef } from "./scene/scene.types";
 import { TrackItem } from "@/types";
+import Timeline from "./timeline/timeline";
 
 const stateManager = new StateManager({
   size: { width: 1080, height: 1920 },
@@ -116,7 +117,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
           <ResizableHandle />
 
           <ResizablePanel className="min-h-[50px]" defaultSize={30}>
-            <div className="p-4 text-sm text-muted-foreground">Timeline (placeholder)</div>
+            <Timeline videoSrc="/videos/Bridgertone.mp4" />
           </ResizablePanel>
 
           {!isLargeScreen && !trackItem && <MenuListHorizontal />}
