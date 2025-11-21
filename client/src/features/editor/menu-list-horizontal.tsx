@@ -24,6 +24,16 @@ interface MenuItemData {
 // Menu items configuration
 const menuItems: MenuItemData[] = [
   {
+    id: "uploads",
+    label: "Uploads",
+    icon: Icons.upload
+  },
+  {
+    id: "groups",
+    label: "Groups",
+    icon: Icons.folder
+  },
+  {
     id: "texts",
     label: "Text",
     icon: Icons.type

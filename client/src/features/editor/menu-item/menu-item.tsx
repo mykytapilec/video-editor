@@ -7,6 +7,7 @@ import { Images } from "./images";
 import { Videos } from "./videos";
 import { Captions } from "./captions";
 import { VoiceOver } from "./voice-over";
+import Groups from "./groups";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
 import Uploads from "./uploads";
 import { AiVoice } from "./ai-voice";
@@ -47,7 +48,9 @@ const ActiveMenuItem = () => {
   if (activeMenuItem === "uploads") {
     return <Uploads />;
   }
-
+  if (activeMenuItem === "groups") {
+    return <Groups />
+  }
   if (activeMenuItem === "ai-voice") {
     return <AiVoice />;
   }

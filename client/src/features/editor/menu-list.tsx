@@ -21,6 +21,12 @@ const MENU_ITEMS = [
     ariaLabel: "Add and manage uploads"
   },
   {
+    id: "groups",
+    icon: Icons.folder,
+    label: "Groups",
+    ariaLabel: "Manage groups"
+  },
+  {
     id: "texts",
     icon: Icons.type,
     label: "Texts",
