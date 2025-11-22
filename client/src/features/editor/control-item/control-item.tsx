@@ -1,12 +1,5 @@
+// /Users/mikitapilets/Documents/dev/video-editor/client/src/features/editor/control-item/control-item.tsx
 import React, { useEffect, useState } from "react";
-import {
-  IAudio,
-  ICaption,
-  IImage,
-  IText,
-  IVideo,
-  ITrackItemAndDetails
-} from "@designcombo/types";
 
 import BasicText from "./basic-text";
 import BasicImage from "./basic-image";
@@ -18,6 +11,7 @@ import { LassoSelect } from "lucide-react";
 import useStore from "../store/use-store";
 import useLayoutStore from "../store/use-layout-store";
 import { useEditorStore } from "../store/use-editor-store";
+import { convertToITrackItem } from "@/utils/convertToITrackItem";
 
 // temporary — until group panel is designed
 const BasicGroup = ({ group }: any) => (
@@ -30,38 +24,46 @@ const BasicGroup = ({ group }: any) => (
 );
 
 const Container = ({ children }: { children: React.ReactNode }) => {
+  // application timeline store (local TrackItem shape)
   const { activeIds, trackItemsMap } = useStore();
+
+  // editor-specific store (groups)
   const { groups, selectedGroupId } = useEditorStore();
+
+  // layout store expects ITrackItem | null
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
 
-  const [trackItem, setTrackItem] = useState<ITrackItemAndDetails | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  // keep local trackItem as the app TrackItem (could be typed more strictly)
+  const [trackItem, setTrackItem] = useState<any | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
   useEffect(() => {
-    // if group selected → show group panel
+    // 1) group selected -> show group panel, clear layout track item
     if (selectedGroupId !== null) {
       const group = groups.find((g) => g.id === selectedGroupId) || null;
       setSelectedGroup(group);
 
-      // hide trackItem panel
       setTrackItem(null);
       setLayoutTrackItem(null);
       return;
     }
 
-    // fallback → track item selection
+    // 2) fallback -> selected track item from timeline
     setSelectedGroup(null);
 
     if (activeIds.length === 1) {
       const [id] = activeIds;
       const item = trackItemsMap[id] || null;
       setTrackItem(item);
-      setLayoutTrackItem(item);
+
+      // convert to ITrackItem for layout store (or null)
+      const iItem = item ? convertToITrackItem(item) : null;
+      setLayoutTrackItem(iItem);
     } else {
       setTrackItem(null);
       setLayoutTrackItem(null);
     }
-  }, [activeIds, trackItemsMap, selectedGroupId, groups]);
+  }, [activeIds, trackItemsMap, selectedGroupId, groups, setLayoutTrackItem]);
 
   return (
     <div className="flex w-[272px] flex-none border-l border-border/80 bg-muted hidden lg:block">
@@ -77,7 +79,7 @@ const ActiveControlItem = ({
   trackItem,
   selectedGroup,
 }: {
-  trackItem?: ITrackItemAndDetails | null;
+  trackItem?: any | null;
   selectedGroup?: any | null;
 }) => {
   // group mode
@@ -96,15 +98,16 @@ const ActiveControlItem = ({
   }
 
   // track item mode
-  const panels: Record<string, JSX.Element> = {
-    text: <BasicText trackItem={trackItem as IText} />,
-    caption: <BasicCaption trackItem={trackItem as ICaption} />,
-    image: <BasicImage trackItem={trackItem as IImage} />,
-    video: <BasicVideo trackItem={trackItem as IVideo} />,
-    audio: <BasicAudio trackItem={trackItem as IAudio} />,
+  // Basic* components expect designcombo types; cast to any to avoid TS mismatch
+  const panels: Record<string, React.ReactNode> = {
+    text: <BasicText trackItem={trackItem as any} />,
+    caption: <BasicCaption trackItem={trackItem as any} />,
+    image: <BasicImage trackItem={trackItem as any} />,
+    video: <BasicVideo trackItem={trackItem as any} />,
+    audio: <BasicAudio trackItem={trackItem as any} />,
   };
 
-  return panels[trackItem.type] ?? null;
+  return <>{panels[trackItem.type] ?? null}</>;
 };
 
 export const ControlItem = () => {
@@ -114,3 +117,5 @@ export const ControlItem = () => {
     </Container>
   );
 };
+
+export default ControlItem;
