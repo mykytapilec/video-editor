@@ -19,40 +19,73 @@ import useStore from "../store/use-store";
 import useLayoutStore from "../store/use-layout-store";
 import { useEditorStore } from "../store/use-editor-store";
 
-const Container = ({ children }: { children: React.ReactNode }) => {
-  const { activeIds, trackItemsMap } = useStore(); // ONLY here
-  const [trackItem, setTrackItem] = useState<any>(null);
+// temporary — until group panel is designed
+const BasicGroup = ({ group }: any) => (
+  <div className="p-4 text-sm text-zinc-300">
+    <h3 className="font-semibold mb-2">Group #{group.id}</h3>
+    <div>Text: {group.text}</div>
+    <div>Start: {group.start}</div>
+    <div>End: {group.end}</div>
+  </div>
+);
 
+const Container = ({ children }: { children: React.ReactNode }) => {
+  const { activeIds, trackItemsMap } = useStore();
+  const { groups, selectedGroupId } = useEditorStore();
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
-  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
+
+  const [trackItem, setTrackItem] = useState<ITrackItemAndDetails | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
 
   useEffect(() => {
-    let item = null;
+    // if group selected → show group panel
+    if (selectedGroupId !== null) {
+      const group = groups.find((g) => g.id === selectedGroupId) || null;
+      setSelectedGroup(group);
 
-    // 1. group selected → prefer
-    if (selectedGroupId) {
-      item = trackItemsMap[selectedGroupId] || null;
+      // hide trackItem panel
+      setTrackItem(null);
+      setLayoutTrackItem(null);
+      return;
     }
-    // 2. fallback: normal item selection
-    else if (activeIds.length === 1) {
+
+    // fallback → track item selection
+    setSelectedGroup(null);
+
+    if (activeIds.length === 1) {
       const [id] = activeIds;
-      item = trackItemsMap[id] || null;
+      const item = trackItemsMap[id] || null;
+      setTrackItem(item);
+      setLayoutTrackItem(item);
+    } else {
+      setTrackItem(null);
+      setLayoutTrackItem(null);
     }
-
-    setTrackItem(item);
-    setLayoutTrackItem(item);
-  }, [activeIds, trackItemsMap, selectedGroupId]);
+  }, [activeIds, trackItemsMap, selectedGroupId, groups]);
 
   return (
     <div className="flex w-[272px] flex-none border-l border-border/80 bg-muted hidden lg:block">
       {React.cloneElement(children as React.ReactElement<any>, {
-        trackItem
+        trackItem,
+        selectedGroup,
       })}
     </div>
   );
 };
 
-const ActiveControlItem = ({ trackItem }: { trackItem?: ITrackItemAndDetails }) => {
+const ActiveControlItem = ({
+  trackItem,
+  selectedGroup,
+}: {
+  trackItem?: ITrackItemAndDetails | null;
+  selectedGroup?: any | null;
+}) => {
+  // group mode
+  if (selectedGroup) {
+    return <BasicGroup group={selectedGroup} />;
+  }
+
+  // nothing selected
   if (!trackItem) {
     return (
       <div className="pb-32 flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground h-[calc(100vh-58px)]">
@@ -62,19 +95,16 @@ const ActiveControlItem = ({ trackItem }: { trackItem?: ITrackItemAndDetails }) 
     );
   }
 
-  return (
-    <>
-      {
-        {
-          text: <BasicText trackItem={trackItem as any} />,
-          caption: <BasicCaption trackItem={trackItem as any} />,
-          image: <BasicImage trackItem={trackItem as any} />,
-          video: <BasicVideo trackItem={trackItem as any} />,
-          audio: <BasicAudio trackItem={trackItem as any} />
-        }[trackItem.type]
-      }
-    </>
-  );
+  // track item mode
+  const panels: Record<string, JSX.Element> = {
+    text: <BasicText trackItem={trackItem as IText} />,
+    caption: <BasicCaption trackItem={trackItem as ICaption} />,
+    image: <BasicImage trackItem={trackItem as IImage} />,
+    video: <BasicVideo trackItem={trackItem as IVideo} />,
+    audio: <BasicAudio trackItem={trackItem as IAudio} />,
+  };
+
+  return panels[trackItem.type] ?? null;
 };
 
 export const ControlItem = () => {
