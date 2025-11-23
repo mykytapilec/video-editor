@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { ITimelineStore, VideoTrackItem } from "@/types";
+import { TrackItem } from "@/types";
 
 const useStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
@@ -54,6 +55,18 @@ const useStore = create<ITimelineStore>((set, get) => ({
     }));
     return id;
   },
+
+  updateTrackItem(id: number, patch: Partial<TrackItem>) {
+    set((state) => ({
+      trackItemsMap: {
+        ...state.trackItemsMap,
+        [id]: {
+          ...state.trackItemsMap[id],
+          ...patch,
+        },
+      },
+    }));
+  }
 }));
 
 export default useStore;

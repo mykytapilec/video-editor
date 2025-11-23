@@ -4,6 +4,8 @@ import React, { useRef, useState } from "react";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { useEditorStore } from "../store/use-editor-store";
 import useStore from "../store/use-store";
+import { TimelineBlock } from "./timeline-block";
+import useLayoutStore from "../store/use-layout-store";
 
 const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +16,7 @@ const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
   const setSelectedGroupId = useEditorStore((s) => s.setSelectedGroupId);
 
   const { trackItemsMap, setActiveIds } = useStore();
+  const { pixelsPerSecond } = useLayoutStore();
 
   const handleGroupClick = (groupId: number) => {
     // try to find track item by numeric id in trackItemsMap
@@ -45,21 +48,11 @@ const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
       {/* group blocks */}
       <div className="absolute inset-0 px-2">
         {groups.map((g) => (
-          <div
+          <TimelineBlock
             key={g.id}
-            onClick={() => handleGroupClick(g.id)}
-            className={`absolute bg-blue-500/60 border border-blue-400 text-xs text-white text-center rounded-md cursor-pointer ${
-              selectedGroupId === g.id ? "ring-2 ring-yellow-400" : ""
-            }`}
-            style={{
-              left: `${g.start * 10 * zoom}px`,
-              width: `${(g.end - g.start) * 10 * zoom}px`,
-              height: "60px",
-              bottom: "10px",
-            }}
-          >
-            {g.text}
-          </div>
+            item={g}
+            pixelsPerSecond={pixelsPerSecond}
+          />
         ))}
       </div>
 

@@ -1,4 +1,5 @@
 import { ITrackItem } from "@designcombo/types";
+import { set } from "lodash";
 
 export type IMenuItem =
   | "uploads"
@@ -27,6 +28,8 @@ export interface ILayoutState {
   controItemDrawerOpen: boolean;
   typeControlItem: string;
   labelControlItem: string;
+  pixelsPerSecond: number;
+  setPixelsPerSecond: (v: number) => void;
   setCropTarget: (cropTarget: ITrackItem | null) => void;
   setActiveMenuItem: (showMenu: IMenuItem | null) => void;
   setShowMenuItem: (showMenuItem: boolean) => void;

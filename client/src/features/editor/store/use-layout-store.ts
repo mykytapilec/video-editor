@@ -13,6 +13,8 @@ const useLayoutStore = create<ILayoutState>((set) => ({
   controItemDrawerOpen: false,
   typeControlItem: "",
   labelControlItem: "",
+  pixelsPerSecond: 100,
+  setPixelsPerSecond: (v) => set({ pixelsPerSecond: v }),
   setCropTarget: (cropTarget) => set({ cropTarget }),
   setActiveMenuItem: (showMenu) => set({ activeMenuItem: showMenu }),
   setShowMenuItem: (showMenuItem) => set({ showMenuItem }),

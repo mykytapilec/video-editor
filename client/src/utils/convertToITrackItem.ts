@@ -12,7 +12,6 @@ export const convertToITrackItem = (item: TrackItem | null): ITrackItem | null =
     name: item.name ?? `Item ${item.id}`,
     type: "template",
 
-    // ❗ start/end/duration НЕ входят в ITemplate → складываем в metadata
     metadata: {
       start: item.start,
       end: item.end,

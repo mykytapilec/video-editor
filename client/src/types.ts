@@ -102,5 +102,8 @@ export interface ITimelineStore {
   currentTime: number;
   setCurrentTime: (t: number) => void;
   setState: (partial: Partial<ITimelineStore>) => void;
+
   addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => number;
+
+  updateTrackItem: (id: number, patch: Partial<TrackItem>) => void;
 }
