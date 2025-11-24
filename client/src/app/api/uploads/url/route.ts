@@ -1,30 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+const BACKEND_URL = "http://localhost:3001/uploads/url";
+
+export async function POST(req: NextRequest) {
   try {
-    const { urls, userId } = await req.json();
+    const body = await req.json();
 
-    if (!urls?.length) {
+    const response = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const text = await response.text();
+
+    try {
+      const json = JSON.parse(text);
+
+      const uploads = (json || []).map((u: any) => ({
+        url: u.directUrl || u.url,
+        fileName: u.fileName || u.name,
+        provider: "external" as const,
+      }));
+
+      return NextResponse.json({ uploads }, { status: response.status });
+    } catch {
       return NextResponse.json(
-        { error: "No URLs provided" },
-        { status: 400 }
+        {
+          error: "External upload returned invalid JSON",
+          details: text.substring(0, 200),
+        },
+        { status: 500 }
       );
     }
-
-    const uploads = urls.map((url: string) => ({
-      url,
-      fileName: url.split("/").pop()?.split("?")[0] || "file",
-      provider: "external"
-    }));
-
-    return NextResponse.json({ uploads });
-  } catch (error: any) {
-    console.error("URL upload error:", error);
-
+  } catch (err: any) {
     return NextResponse.json(
-      {
-        error: "Invalid request"
-      },
+      { error: "URL Upload Route Error", details: err.message },
       { status: 500 }
     );
   }

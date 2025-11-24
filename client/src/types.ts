@@ -27,6 +27,7 @@ interface TrackItemBase {
 export interface VideoTrackItem extends TrackItemBase {
   type: "video";
   src?: string;
+  trim?: { start: number; end: number }; // добавляем сюда
 }
 
 export interface ImageTrackItem extends TrackItemBase {

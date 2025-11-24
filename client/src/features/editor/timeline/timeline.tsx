@@ -1,31 +1,41 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { VideoThumbnail } from "../components/VideoThumbnail";
-import { useEditorStore } from "../store/use-editor-store";
 import useStore from "../store/use-store";
+import useUploadStore from "../store/use-upload-store";
 import { TimelineBlock } from "./timeline-block";
 import useLayoutStore from "../store/use-layout-store";
+import { VideoTrackItem } from "@/types";
 
-const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
+const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
 
-  const groups = useEditorStore((s) => s.groups);
-  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
-  const setSelectedGroupId = useEditorStore((s) => s.setSelectedGroupId);
-
-  const { trackItemsMap, setActiveIds } = useStore();
   const { pixelsPerSecond } = useLayoutStore();
+  const { trackItemsMap, addVideoTrackItem } = useStore();
+  const { files } = useUploadStore();
 
-  const handleGroupClick = (groupId: number) => {
-    // try to find track item by numeric id in trackItemsMap
-    const item = trackItemsMap[groupId];
-    if (item && setActiveIds) {
-      setActiveIds([groupId]);
-    }
-    setSelectedGroupId(groupId);
-  };
+  const videoFiles = files.filter(
+    (f) => f.url || f.file?.type?.startsWith("video/")
+  );
+
+  useEffect(() => {
+    videoFiles.forEach((f) => {
+      if (f.url) {
+        const exists = Object.values(trackItemsMap).some(
+          (item): item is VideoTrackItem => item?.type === "video" && item.src === f.url
+        );
+        if (!exists) {
+          addVideoTrackItem(f.url, { name: f.name ?? "External Video" });
+        }
+      }
+    });
+  }, [videoFiles, trackItemsMap, addVideoTrackItem]);
+
+  const videoItems = Object.values(trackItemsMap).filter(
+    (item): item is VideoTrackItem => item?.type === "video"
+  );
 
   return (
     <div className="relative w-full h-[220px] bg-gray-900 rounded-lg overflow-hidden p-3">
@@ -34,11 +44,11 @@ const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
         className="absolute inset-0 flex items-end gap-1 overflow-x-hidden"
         style={{ transform: `scaleX(${zoom})` }}
       >
-        {Array.from({ length: 20 }).map((_, i) => (
+        {videoItems.map((item) => (
           <VideoThumbnail
-            key={i}
-            src={videoSrc ?? "/videos/Bridgertone.mp4"}
-            currentTime={i}
+            key={item.id}
+            src={item.src!}
+            currentTime={0}
             width={80}
             height={60}
           />
@@ -47,7 +57,7 @@ const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
 
       {/* group blocks */}
       <div className="absolute inset-0 px-2">
-        {groups.map((g) => (
+        {videoItems.map((g) => (
           <TimelineBlock
             key={g.id}
             item={g}
@@ -56,6 +66,7 @@ const Timeline: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
         ))}
       </div>
 
+      {/* zoom controls */}
       <div className="absolute top-2 right-2 flex gap-2">
         <button
           onClick={() => setZoom((z) => Math.max(0.5, Math.min(3, z - 0.2)))}

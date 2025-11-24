@@ -1,6 +1,4 @@
-// /Users/mikitapilets/Documents/dev/video-editor/client/src/features/editor/control-item/control-item.tsx
 import React, { useEffect, useState } from "react";
-
 import BasicText from "./basic-text";
 import BasicImage from "./basic-image";
 import BasicVideo from "./basic-video";
@@ -13,7 +11,6 @@ import useLayoutStore from "../store/use-layout-store";
 import { useEditorStore } from "../store/use-editor-store";
 import { convertToITrackItem } from "@/utils/convertToITrackItem";
 
-// temporary — until group panel is designed
 const BasicGroup = ({ group }: any) => (
   <div className="p-4 text-sm text-zinc-300">
     <h3 className="font-semibold mb-2">Group #{group.id}</h3>
@@ -24,21 +21,14 @@ const BasicGroup = ({ group }: any) => (
 );
 
 const Container = ({ children }: { children: React.ReactNode }) => {
-  // application timeline store (local TrackItem shape)
   const { activeIds, trackItemsMap } = useStore();
-
-  // editor-specific store (groups)
   const { groups, selectedGroupId } = useEditorStore();
-
-  // layout store expects ITrackItem | null
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
 
-  // keep local trackItem as the app TrackItem (could be typed more strictly)
   const [trackItem, setTrackItem] = useState<any | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
   useEffect(() => {
-    // 1) group selected -> show group panel, clear layout track item
     if (selectedGroupId !== null) {
       const group = groups.find((g) => g.id === selectedGroupId) || null;
       setSelectedGroup(group);
@@ -48,16 +38,14 @@ const Container = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // 2) fallback -> selected track item from timeline
     setSelectedGroup(null);
 
     if (activeIds.length === 1) {
-      const [id] = activeIds;
+      const id = activeIds[0];
       const item = trackItemsMap[id] || null;
       setTrackItem(item);
 
-      // convert to ITrackItem for layout store (or null)
-      const iItem = item ? convertToITrackItem(item) : null;
+      const iItem = item && item.type === "video" ? convertToITrackItem(item) : null;
       setLayoutTrackItem(iItem);
     } else {
       setTrackItem(null);
@@ -82,12 +70,7 @@ const ActiveControlItem = ({
   trackItem?: any | null;
   selectedGroup?: any | null;
 }) => {
-  // group mode
-  if (selectedGroup) {
-    return <BasicGroup group={selectedGroup} />;
-  }
-
-  // nothing selected
+  if (selectedGroup) return <BasicGroup group={selectedGroup} />;
   if (!trackItem) {
     return (
       <div className="pb-32 flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground h-[calc(100vh-58px)]">
@@ -97,14 +80,12 @@ const ActiveControlItem = ({
     );
   }
 
-  // track item mode
-  // Basic* components expect designcombo types; cast to any to avoid TS mismatch
   const panels: Record<string, React.ReactNode> = {
-    text: <BasicText trackItem={trackItem as any} />,
-    caption: <BasicCaption trackItem={trackItem as any} />,
-    image: <BasicImage trackItem={trackItem as any} />,
-    video: <BasicVideo trackItem={trackItem as any} />,
-    audio: <BasicAudio trackItem={trackItem as any} />,
+    text: <BasicText trackItem={trackItem} />,
+    caption: <BasicCaption trackItem={trackItem} />,
+    image: <BasicImage trackItem={trackItem} />,
+    video: <BasicVideo trackItem={trackItem} />,
+    audio: <BasicAudio trackItem={trackItem} />,
   };
 
   return <>{panels[trackItem.type] ?? null}</>;

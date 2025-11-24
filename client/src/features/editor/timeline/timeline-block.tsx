@@ -4,6 +4,7 @@ import useStore from "../store/use-store";
 interface Props {
   item: any; // ITrackItem
   pixelsPerSecond: number;
+  onClick?: () => void;
 }
 
 const HANDLE_WIDTH = 6;

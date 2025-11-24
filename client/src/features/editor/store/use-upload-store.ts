@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { processUpload, type UploadCallbacks } from "@/utils/upload-service";
+import { processUpload } from "@/utils/upload-service";
+
+export type UploadProvider = "local" | "external";
 
 export interface UploadFile {
   id: string;
   file?: File;
   url?: string;
   type?: string;
+  provider?: UploadProvider;
   status?: "pending" | "uploading" | "uploaded" | "failed";
   progress?: number;
   error?: string;
@@ -21,37 +24,58 @@ interface IUploadStore {
   pendingUploads: UploadFile[];
   addPendingUploads: (uploads: UploadFile[]) => void;
   processUploads: () => void;
-  uploads: any[];
-  setUploads: (uploads: any[] | ((prev: any[]) => any[])) => void;
+  uploads: UploadFile[];
+  setUploads: (uploads: UploadFile[] | ((prev: UploadFile[]) => UploadFile[])) => void;
 }
 
 const useUploadStore = create<IUploadStore>()(
-  persist((set, get) => ({
-    showUploadModal: false,
-    setShowUploadModal: (show) => set({ showUploadModal: show }),
+  persist(
+    (set, get) => ({
+      showUploadModal: false,
+      setShowUploadModal: (show) => set({ showUploadModal: show }),
 
-    files: [],
-    setFiles: (files) => set((state) => ({ files: typeof files === "function" ? (files as (prev: UploadFile[]) => UploadFile[])(state.files) : files })),
+      files: [],
+      setFiles: (files) =>
+        set((state) => ({
+          files:
+            typeof files === "function"
+              ? (files as (prev: UploadFile[]) => UploadFile[])(state.files)
+              : files,
+        })),
 
-    pendingUploads: [],
-    addPendingUploads: (uploads) => set((state) => ({ pendingUploads: [...state.pendingUploads, ...uploads] })),
+      pendingUploads: [],
+      addPendingUploads: (uploads) =>
+        set((state) => ({
+          pendingUploads: [...state.pendingUploads, ...uploads],
+        })),
 
-    processUploads: () => {
-      const { pendingUploads, setUploads } = get();
-      for (const u of pendingUploads) {
-        processUpload(u.id, { file: u.file, url: u.url }, {
-          onProgress: () => {},
-          onStatus: () => {}
-        }).then((res) => {
-          setUploads((prev) => [...prev, ...(Array.isArray(res) ? res : [res])]);
-        }).catch(console.error);
-      }
-      set({ pendingUploads: [] });
-    },
+      processUploads: () => {
+        const { pendingUploads, setUploads } = get();
+        for (const u of pendingUploads) {
+          processUpload(
+            u.id,
+            { file: u.file, url: u.url },
+            { onProgress: () => {}, onStatus: () => {} }
+          )
+            .then((res) => {
+              setUploads((prev) => [...prev, ...(Array.isArray(res) ? res : [res])]);
+            })
+            .catch(console.error);
+        }
+        set({ pendingUploads: [] });
+      },
 
-    uploads: [],
-    setUploads: (uploads) => set((state) => ({ uploads: typeof uploads === "function" ? (uploads as (prev: any[]) => any[])(state.uploads) : uploads }))
-  }), { name: "upload-store", partialize: (state) => ({ uploads: state.uploads }) })
+      uploads: [],
+      setUploads: (uploads) =>
+        set((state) => ({
+          uploads:
+            typeof uploads === "function"
+              ? (uploads as (prev: UploadFile[]) => UploadFile[])(state.uploads)
+              : uploads,
+        })),
+    }),
+    { name: "upload-store", partialize: (state) => ({ uploads: state.uploads }) }
+  )
 );
 
 export default useUploadStore;
