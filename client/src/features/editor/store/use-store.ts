@@ -1,6 +1,6 @@
+// /src/features/editor/store/use-store.ts
 import { create } from "zustand";
-import { ITimelineStore, VideoTrackItem } from "@/types";
-import { TrackItem } from "@/types";
+import { ITimelineStore, VideoTrackItem, TrackItem } from "@/types";
 
 const useStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
@@ -58,15 +58,16 @@ const useStore = create<ITimelineStore>((set, get) => ({
 
   updateTrackItem(id: number, patch: Partial<TrackItem>) {
     set((state) => ({
+      ...state,
       trackItemsMap: {
         ...state.trackItemsMap,
         [id]: {
           ...state.trackItemsMap[id],
           ...patch,
-        },
+        } as TrackItem,
       },
     }));
-  }
+  },
 }));
 
 export default useStore;

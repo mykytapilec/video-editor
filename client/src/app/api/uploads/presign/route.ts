@@ -1,63 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 
-interface PresignRequest {
-  userId: string;
-  fileNames: string[];
-}
+const BACKEND_URL = "http://localhost:3001/uploads/presign";
 
-interface ExternalPresignResponse {
-  fileName: string;
-  filePath: string;
-  contentType: string;
-  presignedUrl: string;
-  folder?: string;
-  url: string;
-}
-
-interface ExternalPresignsResponse {
-  uploads: ExternalPresignResponse[];
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body: PresignRequest = await request.json();
-    const { userId, fileNames } = body;
+    const body = await req.json();
 
-    if (!userId) return NextResponse.json({ error: "userId is required" }, { status: 400 });
-    if (!fileNames?.length) return NextResponse.json({ error: "fileNames array is required", status: 400 });
+    const response = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-    let externalData: ExternalPresignsResponse | null = null;
+    const text = await response.text();
 
     try {
-      const externalResponse = await fetch(
-        "https://upload-file-j43uyuaeza-uc.a.run.app/presigned",
+      const json = JSON.parse(text);
+      return NextResponse.json(json, { status: response.status });
+    } catch (e) {
+      return NextResponse.json(
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, fileNames }),
-        }
+          error: "Invalid JSON returned from backend",
+          details: text.substring(0, 200),
+        },
+        { status: 500 }
       );
-
-      const text = await externalResponse.text();
-      try {
-        externalData = JSON.parse(text);
-      } catch {
-        return NextResponse.json(
-          { error: "External presign returned invalid JSON", details: text.slice(0, 200) },
-          { status: externalResponse.status }
-        );
-      }
-
-      if (!externalResponse.ok) {
-        return NextResponse.json({ error: "External presign failed", details: externalData }, { status: externalResponse.status });
-      }
-    } catch (err) {
-      return NextResponse.json({ error: "Failed to connect to external presign service", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
-
-    return NextResponse.json({ success: true, uploads: externalData?.uploads ?? [] });
-  } catch (error) {
-    console.error("Presign route error:", error);
-    return NextResponse.json({ error: "Internal server error", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        error: "Presign route error",
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

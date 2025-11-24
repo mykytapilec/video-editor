@@ -14,6 +14,7 @@ import clsx from "clsx";
 import useUploadStore, { UploadFile } from "@/features/editor/store/use-upload-store";
 import { Input } from "./ui/input";
 import axios from "axios";
+import useStore from "@/features/editor/store/use-store";
 
 type ModalUploadProps = { type?: string };
 
@@ -24,14 +25,17 @@ export const extractVideoThumbnail = (file: File) =>
     video.currentTime = 1;
     video.muted = true;
     video.playsInline = true;
+
     video.onloadeddata = () => {
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
+
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL("image/png"));
     };
+
     video.onerror = () => resolve("");
   });
 
@@ -58,6 +62,7 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
     if (!e.target.files?.length) return;
 
     const selectedFiles = Array.from(e.target.files);
+
     const newFiles = selectedFiles
       .filter((f) => !files.some((fileObj) => fileObj.file?.name === f.name))
       .map((f) => ({ id: crypto.randomUUID(), file: f }));
@@ -74,21 +79,35 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
           thumb: f.file ? await extractVideoThumbnail(f.file) : ""
         }))
     );
+
     setVideoThumbnails((prev) => ({
       ...prev,
       ...Object.fromEntries(thumbs.map((v) => [v.name, v.thumb]))
     }));
   };
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault(); setIsDragOver(false);
+    e.preventDefault();
+    setIsDragOver(false);
+
     if (!e.dataTransfer.files) return;
+
     const newFiles = Array.from(e.dataTransfer.files)
       .filter((f) => !files.some((fileObj) => fileObj.file?.name === f.name))
       .map((f) => ({ id: crypto.randomUUID(), file: f }));
+
     if (!newFiles.length) return;
+
     setFiles((prev) => [...prev, ...newFiles]);
 
     const thumbs = await Promise.all(
@@ -99,48 +118,63 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
           thumb: f.file ? await extractVideoThumbnail(f.file) : ""
         }))
     );
+
     setVideoThumbnails((prev) => ({
       ...prev,
       ...Object.fromEntries(thumbs.map((v) => [v.name, v.thumb]))
     }));
   };
 
-  const handleRemoveFile = (id: string) => setFiles(files.filter((f) => f.id !== id));
+  const handleRemoveFile = (id: string) =>
+    setFiles(files.filter((f) => f.id !== id));
 
   const getAcceptType = () => {
     switch (type) {
-      case "audio": return "audio/*";
-      case "image": return "image/*";
-      case "video": return "video/*";
-      default: return "audio/*,image/*,video/*";
+      case "audio":
+        return "audio/*";
+      case "image":
+        return "image/*";
+      case "video":
+        return "video/*";
+      default:
+        return "audio/*,image/*,video/*";
     }
   };
 
   const handleUpload = async () => {
     setIsUploading(true);
 
-    const userId = "PJ1nkaufw0hZPyhN7bWCP"; // TODO: change to real userId from the session
+    const userId = "PJ1nkaufw0hZPyhN7bWCP";
 
     try {
       let uploadedFiles: UploadFile[] = [];
 
-      // 1️⃣ URL Upload
+      // URL UPLOAD
       if (videoUrl.trim()) {
-        const res = await axios.post("/api/uploads/url", { userId, urls: [videoUrl.trim()] });
+        const res = await axios.post("/api/uploads/url", {
+          userId,
+          urls: [videoUrl.trim()]
+        });
+
         uploadedFiles.push(
-          ...(res.data.uploads.map((u: any) => ({
+          ...res.data.uploads.map((u: any) => ({
             id: crypto.randomUUID(),
             url: u.url,
             type: "url",
             name: u.fileName || ""
-          })))
+          }))
         );
       }
 
-      // 2️⃣ Local file upload
+      // LOCAL UPLOAD
       if (files.length > 0) {
         const fileNames = files.map((f) => f.file?.name || "file");
-        const presignRes = await axios.post("/api/uploads/presign", { userId, fileNames });
+
+        await axios.post("/api/uploads/presign", {
+          userId,
+          fileNames
+        });
+
         uploadedFiles.push(
           ...files.map((f) => ({
             id: f.id,
@@ -154,11 +188,17 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
       addPendingUploads(uploadedFiles);
       processUploads();
 
-      // Reset
+      if (uploadedFiles.length > 0) {
+        uploadedFiles.forEach((f) => {
+          useStore.getState().setActiveIds?.([
+            f.id as unknown as number
+          ]);
+        });
+      }
+
       setFiles([]);
       setVideoUrl("");
       setShowUploadModal(false);
-
     } catch (error: any) {
       console.error("Upload failed:", error);
       alert(error.response?.data?.error || "Upload failed");
@@ -167,12 +207,17 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
     }
   };
 
-  useEffect(() => { setFiles([]); }, [showUploadModal]);
+  useEffect(() => {
+    setFiles([]);
+  }, [showUploadModal]);
 
   return (
     <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Upload media</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Upload media</DialogTitle>
+        </DialogHeader>
+
         <div className="space-y-6">
           <label className="flex flex-col gap-2">
             <input
@@ -186,15 +231,21 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
             <div
               className={clsx(
                 "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-                isDragOver ? "border-primary bg-primary/10" : "border border-border hover:border-muted-foreground/50"
+                isDragOver
+                  ? "border-primary bg-primary/10"
+                  : "border border-border hover:border-muted-foreground/50"
               )}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
               <UploadIcon className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground mb-2">Drag and drop files here, or</p>
-              <Button onClick={triggerFileInput} variant="outline" size="sm">browse files</Button>
+              <p className="text-sm text-muted-foreground mb-2">
+                Drag and drop files here, or
+              </p>
+              <Button onClick={triggerFileInput} variant="outline" size="sm">
+                browse files
+              </Button>
             </div>
           </label>
 
@@ -214,9 +265,18 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
                       <div className="flex flex-1 gap-2 items-center">
                         <div className="w-8 h-8 flex items-center justify-center">
                           {file.file?.type.startsWith("image/") ? (
-                            <img src={URL.createObjectURL(file.file)} alt={file.file.name} className="h-8 w-8 object-cover rounded border" />
-                          ) : file.file?.type.startsWith("video/") && videoThumbnails[file.file.name] ? (
-                            <img src={videoThumbnails[file.file.name]} alt={file.file.name} className="h-8 w-8 object-cover rounded border" />
+                            <img
+                              src={URL.createObjectURL(file.file)}
+                              alt={file.file.name}
+                              className="h-8 w-8 object-cover rounded border"
+                            />
+                          ) : file.file?.type.startsWith("video/") &&
+                            videoThumbnails[file.file.name] ? (
+                            <img
+                              src={videoThumbnails[file.file.name]}
+                              alt={file.file.name}
+                              className="h-8 w-8 object-cover rounded border"
+                            />
                           ) : (
                             <div className="h-8 w-8 flex items-center justify-center rounded border bg-muted">
                               <FileIcon className="h-4 w-4 text-foreground" />
@@ -225,7 +285,11 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
                         </div>
                         <div className="truncate">{file.file?.name}</div>
                       </div>
-                      <Button variant="outline" size="icon" onClick={() => handleRemoveFile(file.id)}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleRemoveFile(file.id)}
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -244,8 +308,15 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
-          <Button onClick={handleUpload} disabled={(files.length === 0 && !videoUrl) || isUploading}>Upload</Button>
+          <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpload}
+            disabled={(files.length === 0 && !videoUrl) || isUploading}
+          >
+            Upload
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
