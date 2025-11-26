@@ -1,94 +1,82 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { processUpload } from "@/utils/upload-service";
-import useStore from "./use-store";
 
-export type UploadProvider = "local" | "external";
-
-export interface UploadFile {
+export type UploadFile = {
   id: string;
   file?: File;
   url?: string;
-  type?: string;
-  provider?: UploadProvider;
-  status?: "pending" | "uploading" | "uploaded" | "failed";
-  progress?: number;
-  error?: string;
-  name?: string;
-}
+  name: string;
+  status: "pending" | "uploading" | "success" | "error";
+  uploadedUrl?: string;
+};
 
-interface IUploadStore {
-  showUploadModal: boolean;
-  setShowUploadModal: (show: boolean) => void;
-
-  files: UploadFile[];
-  setFiles: (files: UploadFile[] | ((prev: UploadFile[]) => UploadFile[])) => void;
-
+type UploadStore = {
   pendingUploads: UploadFile[];
-  addPendingUploads: (uploads: UploadFile[]) => void;
+  showUploadModal: boolean;
+  setShowUploadModal: (value: boolean) => void;
+  addPendingUploads: (files: UploadFile[]) => void;
+  processUploads: () => Promise<void>;
+};
 
-  processUploads: () => void;
+export const useUploadStore = create<UploadStore>((set, get) => ({
+  pendingUploads: [],
+  showUploadModal: false,
 
-  uploads: UploadFile[];
-  setUploads: (uploads: UploadFile[] | ((prev: UploadFile[]) => UploadFile[])) => void;
-}
+  setShowUploadModal: (value: boolean) => set({ showUploadModal: value }),
 
-const useUploadStore = create<IUploadStore>()(
-  persist(
-    (set, get) => ({
-      showUploadModal: false,
-      setShowUploadModal: (show) => set({ showUploadModal: show }),
+  addPendingUploads: (files: UploadFile[]) =>
+    set({ pendingUploads: [...get().pendingUploads, ...files] }),
 
-      files: [],
-      setFiles: (files) =>
-        set((state) => ({
-          files: typeof files === "function" ? files(state.files) : files,
-        })),
+  processUploads: async () => {
+    const uploads = get().pendingUploads;
 
-      pendingUploads: [],
-      addPendingUploads: (uploads) =>
-        set((state) => ({
-          pendingUploads: [...state.pendingUploads, ...uploads],
-        })),
+    for (const file of uploads) {
+      if (file.status !== "pending") continue;
 
-      processUploads: () => {
-        const pending = get().pendingUploads;
+      set({
+        pendingUploads: get().pendingUploads.map((f) =>
+          f.id === file.id ? { ...f, status: "uploading" } : f
+        ),
+      });
 
-        for (const u of pending) {
-          processUpload(
-            u.id,
-            { file: u.file, url: u.url },
-            { onProgress: () => {}, onStatus: () => {} }
-          )
-            .then((res) => {
-              const results = Array.isArray(res) ? res : [res];
-              const addVideo = useStore.getState().addVideoTrackItem;
+      try {
+        let uploadedItem: { id: string; uploadedUrl: string; status: "success" };
 
-              results.forEach((file) => {
-                const src =
-                  file.url ||
-                  file.filePath ||
-                  file.metadata?.uploadedUrl ||
-                  file.metadata?.originalUrl;
+        if (file.file) {
+          uploadedItem = {
+            id: file.id,
+            uploadedUrl: URL.createObjectURL(file.file),
+            status: "success",
+          };
+        } else if (file.url) {
+          const res = await fetch("/api/uploads/url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: file.url }),
+          });
 
-                if (!src) return;
-                addVideo(src, { name: file.name ?? "Video" });
-              });
-            })
-            .catch(console.error);
+          if (!res.ok) throw new Error("Upload failed");
+
+          const data = await res.json();
+          uploadedItem = data.uploads[0];
+        } else {
+          continue;
         }
 
-        set({ pendingUploads: [] });
-      },
-
-      uploads: [],
-      setUploads: (uploads) =>
-        set((state) => ({
-          uploads: typeof uploads === "function" ? uploads(state.uploads) : uploads,
-        })),
-    }),
-    { name: "upload-store", partialize: (state) => ({ uploads: state.uploads }) }
-  )
-);
-
-export default useUploadStore;
+        set({
+          pendingUploads: get().pendingUploads.map((f) =>
+            f.id === file.id
+              ? { ...f, status: "success", uploadedUrl: uploadedItem.uploadedUrl }
+              : f
+          ),
+        });
+      } catch (err) {
+        console.error("Upload failed:", err);
+        set({
+          pendingUploads: get().pendingUploads.map((f) =>
+            f.id === file.id ? { ...f, status: "error" } : f
+          ),
+        });
+      }
+    }
+  },
+}));

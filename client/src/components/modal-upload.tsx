@@ -1,11 +1,12 @@
 "use client";
 
-import useUploadStore, { UploadFile } from "@/features/editor/store/use-upload-store";
 import React, { useRef, useState } from "react";
+import { UploadFile, useUploadStore } from "@/features/editor/store/use-upload-store";
 
 const ModalUpload: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { showUploadModal, setShowUploadModal, addPendingUploads, processUploads } = useUploadStore();
+  const { showUploadModal, setShowUploadModal, addPendingUploads, processUploads } =
+    useUploadStore();
   const [urlInput, setUrlInput] = useState("");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,17 +53,32 @@ const ModalUpload: React.FC = () => {
             placeholder="Paste video URL"
             className="flex-1 px-2 py-1 rounded text-black"
           />
-          <button onClick={handleAddUrl} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
+          <button
+            onClick={handleAddUrl}
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500"
+          >
             Add
           </button>
         </div>
 
-        <input ref={inputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
-        <button onClick={() => inputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+        >
           Select Files
         </button>
 
-        <button onClick={() => setShowUploadModal(false)} className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
+        <button
+          onClick={() => setShowUploadModal(false)}
+          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+        >
           Close
         </button>
       </div>

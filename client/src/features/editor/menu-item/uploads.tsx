@@ -1,5 +1,5 @@
 import React from "react";
-import useUploadStore from "@/features/editor/store/use-upload-store";
+import { useUploadStore } from "@/features/editor/store/use-upload-store";
 import ModalUpload from "@/components/modal-upload";
 import { Button } from "@/components/ui/button";
 

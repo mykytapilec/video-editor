@@ -1,3 +1,4 @@
+// /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { TrackItem, VideoTrackItem, ITimelineStore } from "@/types";
 
@@ -64,14 +65,26 @@ const useStore = create<ITimelineStore>((set, get) => ({
     return id;
   },
 
-  updateTrackItem: (id: number, patch: Partial<TrackItem>) => {
+  updateVideoTrackItem: (id: number, patch: Partial<VideoTrackItem>) => {
     const item = get().trackItemsMap[id];
-    if (!item) return;
+    if (!item || item.type !== "video") return;
 
-    const updated: TrackItem =
-      item.type === "video" && "trim" in patch
-        ? { ...item, ...patch, duration: patch.trim!.end - patch.trim!.start }
-        : { ...item, ...patch };
+    const updated: VideoTrackItem = {
+      ...item,
+      ...patch,
+      duration: patch.trim ? patch.trim.end - patch.trim.start : item.duration,
+    };
+
+    set((state) => ({
+      trackItemsMap: { ...state.trackItemsMap, [id]: updated },
+    }));
+  },
+
+  updateTrackItem: (id: number, patch: Partial<Omit<TrackItem, "trim">>) => {
+    const item = get().trackItemsMap[id];
+    if (!item || item.type === "video") return;
+
+    const updated: TrackItem = { ...item, ...patch };
 
     set((state) => ({
       trackItemsMap: { ...state.trackItemsMap, [id]: updated },
