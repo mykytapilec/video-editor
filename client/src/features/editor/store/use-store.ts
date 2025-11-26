@@ -1,67 +1,82 @@
-// /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
-import { TrackItem, VideoTrackItem } from "@/types";
+import { TrackItem, VideoTrackItem, ITimelineStore } from "@/types";
 
-interface IEditorStore {
-  trackItemsMap: Record<number, TrackItem>;
-  activeIds: number[];
-  currentVideoSrc: string | null;
-  currentTime: number;
+const useStore = create<ITimelineStore>((set, get) => ({
+  playerRef: null,
+  setPlayerRef: (ref) => set({ playerRef: ref }),
 
-  // Timeline methods
-  setActiveIds: (ids: number[]) => void;
-  addVideoTrackItem: (src: string, options?: Partial<VideoTrackItem>) => number;
+  sceneMoveableRef: null,
+  setSceneMoveableRef: (ref) => set({ sceneMoveableRef: ref }),
 
-  // Scene / player
-  setCurrentVideoSrc: (src: string | null) => void;
-  setCurrentTime: (time: number) => void;
-}
+  fps: 30,
+  duration: 0,
+  size: { width: 1080, height: 1920 },
 
-const useStore = create<IEditorStore>((set, get) => ({
+  background: { type: "color", value: "#000000" },
+
+  groups: [],
+  groupsLoaded: false,
+  selectedGroupId: null,
+  setSelectedGroupId: (id: number | null) => set({ selectedGroupId: id }),
+
   trackItemsMap: {},
+  trackItemIds: [],
   activeIds: [],
-  currentVideoSrc: null,
-  currentTime: 0,
-
   setActiveIds: (ids: number[]) => {
     set({ activeIds: ids });
-    if (ids.length > 0) {
+    if (ids.length === 1) {
       const id = ids[0];
       const item = get().trackItemsMap[id];
-      if (item && item.type === "video" && item.src) {
-        set({ currentVideoSrc: item.src });
-      }
+      if (item?.type === "video" && item.src) set({ currentVideoSrc: item.src });
     }
   },
 
-  addVideoTrackItem: (src, options) => {
+  currentVideoSrc: null,
+  currentTime: 0,
+  setCurrentVideoSrc: (src: string | null) => set({ currentVideoSrc: src }),
+  setCurrentTime: (t: number) => set({ currentTime: t }),
+
+  setState: (partial: Partial<ITimelineStore>) => set(partial),
+
+  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
-    const trim = options?.trim || { start: 0, end: 5 };
-    const start = trim.start;
-    const end = trim.end;
+    const trim = opts?.trim || { start: 0, end: 5 };
 
     const newItem: VideoTrackItem = {
       id,
-      src,
       type: "video",
-      name: options?.name ?? `Video ${id}`,
+      src,
+      name: opts?.name ?? `Video ${id}`,
       trim,
-      start,
-      end,
+      start: trim.start,
+      end: trim.end,
+      timelineStart: opts?.timelineStart ?? 0,
+      duration: trim.end - trim.start,
     };
 
     set((state) => ({
-      trackItemsMap: {
-        ...state.trackItemsMap,
-        [id]: newItem,
-      },
+      trackItemsMap: { ...state.trackItemsMap, [id]: newItem },
+      trackItemIds: [...state.trackItemIds, id],
     }));
 
+    set({ currentVideoSrc: src });
+    get().setActiveIds([id]);
     return id;
   },
 
-  setCurrentVideoSrc: (src: string | null) => set({ currentVideoSrc: src }),
-  setCurrentTime: (time: number) => set({ currentTime: time }),
+  updateTrackItem: (id: number, patch: Partial<TrackItem>) => {
+    const item = get().trackItemsMap[id];
+    if (!item) return;
+
+    const updated: TrackItem =
+      item.type === "video" && "trim" in patch
+        ? { ...item, ...patch, duration: patch.trim!.end - patch.trim!.start }
+        : { ...item, ...patch };
+
+    set((state) => ({
+      trackItemsMap: { ...state.trackItemsMap, [id]: updated },
+    }));
+  },
 }));
 
 export default useStore;

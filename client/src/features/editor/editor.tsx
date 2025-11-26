@@ -15,10 +15,10 @@ import ControlItemHorizontal from "./control-item-horizontal";
 import { ControlItem } from "./control-item";
 import useLayoutStore from "./store/use-layout-store";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
-import { convertToITrackItem } from "@/utils/convertToITrackItem";
-import { SceneRef } from "./scene/scene.types";
 import { TrackItem } from "@/types";
+import { convertToITrackItem } from "@/utils/convertToITrackItem";
 import Timeline from "./timeline/timeline";
+import { SceneRef } from "./scene/scene.types";
 
 const stateManager = new StateManager({
   size: { width: 1080, height: 1920 },
@@ -31,8 +31,8 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const sceneRef = useRef<SceneRef>(null);
 
-  const activeIds = useStore((s: any) => s.activeIds);
-  const trackItemsMap = useStore((s: any) => s.trackItemsMap);
+  const activeIds = useStore((s) => s.activeIds);
+  const trackItemsMap = useStore((s) => s.trackItemsMap);
 
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
 
@@ -64,7 +64,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
     setLabelControlItem?.("");
     setTypeControlItem?.("");
   }, [isLargeScreen, setFloatingControl, setLabelControlItem, setTypeControlItem]);
-
 
   if (loading) {
     return <div className="flex h-screen w-screen items-center justify-center">Загрузка...</div>;
@@ -109,7 +108,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
                 }}
               >
                 <CropModal />
-                <Scene ref={sceneRef} stateManager={stateManager as any} />
+                <Scene ref={sceneRef} />
               </div>
             </div>
           </ResizablePanel>
@@ -117,7 +116,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
           <ResizableHandle />
 
           <ResizablePanel className="min-h-[50px]" defaultSize={30}>
-            <Timeline videoSrc="/videos/Bridgertone.mp4" />
+            <Timeline />
           </ResizablePanel>
 
           {!isLargeScreen && !trackItem && <MenuListHorizontal />}

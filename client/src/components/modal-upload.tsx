@@ -39,13 +39,7 @@ const ModalUpload: React.FC = () => {
     processUploads();
   };
 
-  const handleUploadClick = () => {
-    inputRef.current?.click();
-  };
-
-  if (!showUploadModal) return null;
-
-  return (
+  return !showUploadModal ? null : (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-gray-900 rounded-lg p-6 w-96 flex flex-col gap-4">
         <h2 className="text-white text-lg">Upload Files or URL</h2>
@@ -58,32 +52,17 @@ const ModalUpload: React.FC = () => {
             placeholder="Paste video URL"
             className="flex-1 px-2 py-1 rounded text-black"
           />
-          <button
-            onClick={handleAddUrl}
-            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500"
-          >
+          <button onClick={handleAddUrl} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
             Add
           </button>
         </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <button
-          onClick={handleUploadClick}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
-        >
+        <input ref={inputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
+        <button onClick={() => inputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
           Select Files
         </button>
 
-        <button
-          onClick={() => setShowUploadModal(false)}
-          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-        >
+        <button onClick={() => setShowUploadModal(false)} className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
           Close
         </button>
       </div>

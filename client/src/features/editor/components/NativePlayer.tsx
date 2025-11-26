@@ -15,21 +15,13 @@ const NativePlayer: React.FC<NativePlayerProps> = ({ src, currentTime, onTimeUpd
     if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.1) {
       videoRef.current.currentTime = currentTime;
     }
-  }, [currentTime]);
+  }, [currentTime, src]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) onTimeUpdate(videoRef.current.currentTime);
   };
 
-  return (
-    <video
-      ref={videoRef}
-      src={src}
-      controls
-      className="w-full h-full object-contain"
-      onTimeUpdate={handleTimeUpdate}
-    />
-  );
+  return <video ref={videoRef} src={src} controls className="w-full h-full object-contain" onTimeUpdate={handleTimeUpdate} />;
 };
 
 export default NativePlayer;

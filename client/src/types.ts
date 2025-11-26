@@ -22,12 +22,13 @@ interface TrackItemBase {
   start: number;
   end: number;
   duration?: number;
+  timelineStart?: number;
 }
 
 export interface VideoTrackItem extends TrackItemBase {
   type: "video";
   src?: string;
-  trim?: { start: number; end: number }; // добавляем сюда
+  trim?: { start: number; end: number };
 }
 
 export interface ImageTrackItem extends TrackItemBase {
@@ -77,17 +78,14 @@ export interface ITimelineStore {
   playerRef: React.RefObject<any> | null;
   setPlayerRef: (ref: React.RefObject<any> | null) => void;
 
-  // moveable ref
   sceneMoveableRef: React.RefObject<any> | null;
   setSceneMoveableRef: (ref: React.RefObject<any> | null) => void;
 
-  // playback / composition
   fps: number;
   duration: number;
   size: Size;
   background: Background;
 
-  // groups / timeline items
   groups: TimelineGroup[];
   groupsLoaded?: boolean;
   selectedGroupId: number | null;
@@ -96,7 +94,7 @@ export interface ITimelineStore {
   trackItemsMap: Record<number, TrackItem | undefined>;
   trackItemIds: number[];
   activeIds: number[];
-  setActiveIds?: (ids: number[]) => void;
+  setActiveIds: (ids: number[]) => void;
 
   currentVideoSrc: string | null;
   setCurrentVideoSrc: (src: string | null) => void;
@@ -105,6 +103,5 @@ export interface ITimelineStore {
   setState: (partial: Partial<ITimelineStore>) => void;
 
   addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => number;
-
   updateTrackItem: (id: number, patch: Partial<TrackItem>) => void;
 }
