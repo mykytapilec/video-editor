@@ -1,6 +1,7 @@
 // /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { TrackItem, VideoTrackItem, ITimelineStore } from "@/types";
+import { nanoid } from "nanoid";
 
 const useStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
@@ -18,12 +19,12 @@ const useStore = create<ITimelineStore>((set, get) => ({
   groups: [],
   groupsLoaded: false,
   selectedGroupId: null,
-  setSelectedGroupId: (id: number | null) => set({ selectedGroupId: id }),
+  setSelectedGroupId: (id: string | null) => set({ selectedGroupId: id }),
 
   trackItemsMap: {},
   trackItemIds: [],
   activeIds: [],
-  setActiveIds: (ids: number[]) => {
+  setActiveIds: (ids: string[]) => {
     set({ activeIds: ids });
     if (ids.length === 1) {
       const id = ids[0];
@@ -40,7 +41,7 @@ const useStore = create<ITimelineStore>((set, get) => ({
   setState: (partial: Partial<ITimelineStore>) => set(partial),
 
   addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const id = nanoid();
     const trim = opts?.trim || { start: 0, end: 5 };
 
     const newItem: VideoTrackItem = {
@@ -62,10 +63,11 @@ const useStore = create<ITimelineStore>((set, get) => ({
 
     set({ currentVideoSrc: src });
     get().setActiveIds([id]);
+
     return id;
   },
 
-  updateVideoTrackItem: (id: number, patch: Partial<VideoTrackItem>) => {
+  updateVideoTrackItem: (id: string, patch: Partial<VideoTrackItem>) => {
     const item = get().trackItemsMap[id];
     if (!item || item.type !== "video") return;
 
@@ -80,7 +82,7 @@ const useStore = create<ITimelineStore>((set, get) => ({
     }));
   },
 
-  updateTrackItem: (id: number, patch: Partial<Omit<TrackItem, "trim">>) => {
+  updateTrackItem: (id: string, patch: Partial<Omit<TrackItem, "trim">>) => {
     const item = get().trackItemsMap[id];
     if (!item || item.type === "video") return;
 

@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const uploadedItem = {
-      id: Date.now().toString(),
+      id: nanoid(),
       originalUrl: url,
       uploadedUrl: url,
       status: "success",

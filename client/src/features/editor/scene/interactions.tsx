@@ -16,17 +16,17 @@ export function SceneInteractions() {
         const fps = useStore.getState().fps || 30;
         const frame = ev?.detail?.frame ?? 0;
         const timeMs = (frame / fps) * 1000;
-        const visibleIds: number[] = [];
+        const visibleIds: string[] = [];
 
         const map = useStore.getState().trackItemsMap;
         for (const key of Object.keys(map)) {
-          const numKey = Number(key);
-          const it = map[numKey];
+          const it = map[key];
           if (!it) continue;
           if (it.start * 1000 <= timeMs && it.end * 1000 >= timeMs) {
-            visibleIds.push(numKey);
+            visibleIds.push(key);
           }
         }
+
         setState({ activeIds: visibleIds });
       } catch (e) {
         // ignore errors (defensive)

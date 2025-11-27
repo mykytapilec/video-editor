@@ -16,6 +16,7 @@ import {
 import { getFileFromUrl } from "../../utils/file";
 import { createMediaControls } from "../controls";
 import { SECONDARY_FONT } from "../../constants/constants";
+import { nanoid } from "nanoid";
 
 // Type declaration for MP4Clip to avoid SSR issues
 type MP4ClipType = any;
@@ -215,7 +216,7 @@ class Video extends Trimmable {
     return new Promise<void>((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = `${fallbackThumbnail}?t=${Date.now()}`;
+      img.src = `${fallbackThumbnail}?t=${nanoid()}`;
       img.onload = () => {
         // Create a temporary canvas to resize the image
         const canvas = document.createElement("canvas");

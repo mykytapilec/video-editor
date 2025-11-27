@@ -1,5 +1,7 @@
+// /client/src/types.ts
+
 export interface Group {
-  id: number;
+  id: string;
   idx?: number;
   name: string | null;
   start: string;
@@ -8,7 +10,7 @@ export interface Group {
 }
 
 export interface TimelineGroup {
-  id: number;
+  id: string;
   idx?: number;
   name: string | null;
   start: number;
@@ -17,7 +19,7 @@ export interface TimelineGroup {
 }
 
 interface TrackItemBase {
-  id: number;
+  id: string;
   name: string | null;
   start: number;
   end: number;
@@ -88,13 +90,13 @@ export interface ITimelineStore {
 
   groups: TimelineGroup[];
   groupsLoaded?: boolean;
-  selectedGroupId: number | null;
-  setSelectedGroupId: (id: number | null) => void;
+  selectedGroupId: string | null;
+  setSelectedGroupId: (id: string | null) => void;
 
-  trackItemsMap: Record<number, TrackItem | undefined>;
-  trackItemIds: number[];
-  activeIds: number[];
-  setActiveIds: (ids: number[]) => void;
+  trackItemsMap: Record<string, TrackItem | undefined>;
+  trackItemIds: string[];
+  activeIds: string[];
+  setActiveIds: (ids: string[]) => void;
 
   currentVideoSrc: string | null;
   setCurrentVideoSrc: (src: string | null) => void;
@@ -102,8 +104,8 @@ export interface ITimelineStore {
   setCurrentTime: (t: number) => void;
   setState: (partial: Partial<ITimelineStore>) => void;
 
-  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => number;
-  updateTrackItem: (id: number, patch: Partial<TrackItem>) => void;
+  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => string;
+  updateTrackItem: (id: string, patch: Partial<TrackItem>) => void;
 }
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";

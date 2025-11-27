@@ -1,19 +1,18 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { UploadFile, useUploadStore } from "@/features/editor/store/use-upload-store";
+import { useUploadStore, UploadFile, generateUploadId } from "@/features/editor/store/use-upload-store";
 
 const ModalUpload: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { showUploadModal, setShowUploadModal, addPendingUploads, processUploads } =
-    useUploadStore();
+  const { showUploadModal, setShowUploadModal, addPendingUploads, processUploads } = useUploadStore();
   const [urlInput, setUrlInput] = useState("");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
 
     const newFiles: UploadFile[] = Array.from(event.target.files).map((file) => ({
-      id: (Date.now() + Math.random()).toString(),
+      id: generateUploadId(),
       file,
       name: file.name,
       status: "pending",
@@ -28,7 +27,7 @@ const ModalUpload: React.FC = () => {
 
     const newFiles: UploadFile[] = [
       {
-        id: (Date.now() + Math.random()).toString(),
+        id: generateUploadId(),
         url: urlInput.trim(),
         name: urlInput.trim().split("/").pop() || "external",
         status: "pending",
@@ -40,7 +39,9 @@ const ModalUpload: React.FC = () => {
     processUploads();
   };
 
-  return !showUploadModal ? null : (
+  if (!showUploadModal) return null;
+
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-gray-900 rounded-lg p-6 w-96 flex flex-col gap-4">
         <h2 className="text-white text-lg">Upload Files or URL</h2>

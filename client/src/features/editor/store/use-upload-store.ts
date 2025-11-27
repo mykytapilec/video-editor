@@ -1,4 +1,7 @@
+"use client";
+
 import { create } from "zustand";
+import { nanoid } from "nanoid";
 
 export type UploadFile = {
   id: string;
@@ -6,77 +9,66 @@ export type UploadFile = {
   url?: string;
   name: string;
   status: "pending" | "uploading" | "success" | "error";
-  uploadedUrl?: string;
+  progress?: number;
 };
 
-type UploadStore = {
-  pendingUploads: UploadFile[];
+interface UploadStore {
+  uploads: UploadFile[];
   showUploadModal: boolean;
   setShowUploadModal: (value: boolean) => void;
   addPendingUploads: (files: UploadFile[]) => void;
-  processUploads: () => Promise<void>;
-};
+  processUploads: () => void;
+}
 
 export const useUploadStore = create<UploadStore>((set, get) => ({
-  pendingUploads: [],
+  uploads: [],
   showUploadModal: false,
-
-  setShowUploadModal: (value: boolean) => set({ showUploadModal: value }),
-
-  addPendingUploads: (files: UploadFile[]) =>
-    set({ pendingUploads: [...get().pendingUploads, ...files] }),
-
+  setShowUploadModal: (value) => set({ showUploadModal: value }),
+  addPendingUploads: (files) => set({ uploads: [...get().uploads, ...files] }),
   processUploads: async () => {
-    const uploads = get().pendingUploads;
-
+    const uploads = get().uploads;
     for (const file of uploads) {
-      if (file.status !== "pending") continue;
+      if (file.status === "pending") {
+        set({
+          uploads: uploads.map((f) =>
+            f.id === file.id ? { ...f, status: "uploading" } : f
+          ),
+        });
 
-      set({
-        pendingUploads: get().pendingUploads.map((f) =>
-          f.id === file.id ? { ...f, status: "uploading" } : f
-        ),
-      });
+        try {
+          let uploadedItem: UploadFile;
 
-      try {
-        let uploadedItem: { id: string; uploadedUrl: string; status: "success" };
+          if (file.url) {
+            uploadedItem = {
+              id: file.id,
+              name: file.name,
+              url: file.url,
+              status: "success",
+            };
+          } else if (file.file) {
+            uploadedItem = {
+              id: file.id,
+              name: file.file.name,
+              file: file.file,
+              status: "success",
+            };
+          }
 
-        if (file.file) {
-          uploadedItem = {
-            id: file.id,
-            uploadedUrl: URL.createObjectURL(file.file),
-            status: "success",
-          };
-        } else if (file.url) {
-          const res = await fetch("/api/uploads/url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: file.url }),
+          set({
+            uploads: uploads.map((f) =>
+              f.id === file.id ? { ...uploadedItem } : f
+            ),
           });
-
-          if (!res.ok) throw new Error("Upload failed");
-
-          const data = await res.json();
-          uploadedItem = data.uploads[0];
-        } else {
-          continue;
+        } catch (err) {
+          set({
+            uploads: uploads.map((f) =>
+              f.id === file.id ? { ...f, status: "error" } : f
+            ),
+          });
         }
-
-        set({
-          pendingUploads: get().pendingUploads.map((f) =>
-            f.id === file.id
-              ? { ...f, status: "success", uploadedUrl: uploadedItem.uploadedUrl }
-              : f
-          ),
-        });
-      } catch (err) {
-        console.error("Upload failed:", err);
-        set({
-          pendingUploads: get().pendingUploads.map((f) =>
-            f.id === file.id ? { ...f, status: "error" } : f
-          ),
-        });
       }
     }
   },
 }));
+
+export const generateUploadId = () => nanoid();
