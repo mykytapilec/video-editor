@@ -1,7 +1,16 @@
 // /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
-import { TrackItem, VideoTrackItem, ITimelineStore } from "@/types";
+import { TrackItem, VideoTrackItem, ITimelineStore, ExtendedVideoDetails } from "@/types";
 import { nanoid } from "nanoid";
+
+const defaultVideoDetails: ExtendedVideoDetails = {
+  volume: 100,
+  opacity: 100,
+  borderRadius: 0,
+  borderWidth: 0,
+  borderColor: "#000000",
+  boxShadow: { color: "transparent", x: 0, y: 0, blur: 0 },
+};
 
 const useStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
@@ -54,6 +63,8 @@ const useStore = create<ITimelineStore>((set, get) => ({
       end: trim.end,
       timelineStart: opts?.timelineStart ?? 0,
       duration: trim.end - trim.start,
+      details: { ...defaultVideoDetails, ...(opts?.details ?? {}) },
+      playbackRate: opts?.playbackRate ?? 1,
     };
 
     set((state) => ({
@@ -67,30 +78,34 @@ const useStore = create<ITimelineStore>((set, get) => ({
     return id;
   },
 
-  updateVideoTrackItem: (id: string, patch: Partial<VideoTrackItem>) => {
+  updateTrackItem: (id: string, patch: Partial<TrackItem>) => {
     const item = get().trackItemsMap[id];
-    if (!item || item.type !== "video") return;
+    if (!item) return;
 
-    const updated: VideoTrackItem = {
-      ...item,
-      ...patch,
-      duration: patch.trim ? patch.trim.end - patch.trim.start : item.duration,
-    };
+    if (item.type === "video") {
+      const p = patch as Partial<VideoTrackItem>;
 
-    set((state) => ({
-      trackItemsMap: { ...state.trackItemsMap, [id]: updated },
-    }));
-  },
+      const mergedDetails: ExtendedVideoDetails = {
+        ...(item.details ?? defaultVideoDetails),
+        ...(p.details ?? {}),
+      };
 
-  updateTrackItem: (id: string, patch: Partial<Omit<TrackItem, "trim">>) => {
-    const item = get().trackItemsMap[id];
-    if (!item || item.type === "video") return;
+      const updated: VideoTrackItem = {
+        ...item,
+        ...(p as any),
+        details: mergedDetails,
+        trim: p.trim ?? item.trim,
+      };
 
-    const updated: TrackItem = { ...item, ...patch };
-
-    set((state) => ({
-      trackItemsMap: { ...state.trackItemsMap, [id]: updated },
-    }));
+      set((state) => ({
+        trackItemsMap: { ...state.trackItemsMap, [id]: updated },
+      }));
+    } else {
+      const updated = { ...item, ...patch } as TrackItem;
+      set((state) => ({
+        trackItemsMap: { ...state.trackItemsMap, [id]: updated },
+      }));
+    }
   },
 }));
 

@@ -1,8 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import useStore from "../store/use-store";
+import { VideoTrackItem, TrackItem } from "@/types";
 
 interface Props {
-  item: any; // TrackItem
+  item: TrackItem;
   pixelsPerSecond: number;
   onClick?: () => void;
 }
@@ -15,6 +16,18 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
 
   const [isLeftDragging, setIsLeftDragging] = useState(false);
   const [isRightDragging, setIsRightDragging] = useState(false);
+  const [width, setWidth] = useState(0);
+
+  const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
+
+  useEffect(() => {
+    if (isVideo(item)) {
+      const duration = item.trim ? item.trim.end - item.trim.start : item.duration ?? 0;
+      setWidth(duration * pixelsPerSecond);
+    } else {
+      setWidth(0);
+    }
+  }, [item, pixelsPerSecond]);
 
   const onLeftDown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -28,6 +41,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
 
   const onMouseMove = (e: MouseEvent) => {
     if (!isLeftDragging && !isRightDragging) return;
+    if (!isVideo(item)) return;
 
     const deltaPx = e.movementX;
     const deltaSec = deltaPx / pixelsPerSecond;
@@ -53,7 +67,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
     setIsRightDragging(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", stop);
     return () => {
@@ -62,7 +76,6 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
     };
   });
 
-  const width = item.trim ? (item.trim.end - item.trim.start) * pixelsPerSecond : 0;
   const left = (item.timelineStart ?? 0) * pixelsPerSecond;
 
   return (
@@ -71,18 +84,22 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
       className="relative bg-sky-400 rounded-sm"
       style={{ position: "absolute", left, width, height: 32 }}
     >
-      <div
-        onMouseDown={onLeftDown}
-        className="absolute left-0 top-0 h-full bg-blue-900 cursor-ew-resize"
-        style={{ width: HANDLE_WIDTH }}
-      />
-      <div
-        onMouseDown={onRightDown}
-        className="absolute right-0 top-0 h-full bg-blue-900 cursor-ew-resize"
-        style={{ width: HANDLE_WIDTH }}
-      />
+      {isVideo(item) && (
+        <>
+          <div
+            onMouseDown={onLeftDown}
+            className="absolute left-0 top-0 h-full bg-blue-900 cursor-ew-resize"
+            style={{ width: HANDLE_WIDTH }}
+          />
+          <div
+            onMouseDown={onRightDown}
+            className="absolute right-0 top-0 h-full bg-blue-900 cursor-ew-resize"
+            style={{ width: HANDLE_WIDTH }}
+          />
+        </>
+      )}
       <div className="text-xs text-white px-2">
-        {item.type} • {item.trim ? Math.round((item.trim.end - item.trim.start) * 1000) / 1000 : 0}s
+        {item.type} • {isVideo(item) && item.trim ? Math.round((item.trim.end - item.trim.start) * 1000) / 1000 : 0}s
       </div>
     </div>
   );

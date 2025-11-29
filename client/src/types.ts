@@ -1,5 +1,4 @@
 // /client/src/types.ts
-
 export interface Group {
   id: string;
   idx?: number;
@@ -27,10 +26,26 @@ interface TrackItemBase {
   timelineStart?: number;
 }
 
+export interface ExtendedVideoDetails {
+  volume?: number;
+  opacity?: number;
+  borderRadius?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  boxShadow?: {
+    color: string;
+    x: number;
+    y: number;
+    blur: number;
+  };
+}
+
 export interface VideoTrackItem extends TrackItemBase {
   type: "video";
   src?: string;
   trim?: { start: number; end: number };
+  playbackRate?: number;
+  details?: ExtendedVideoDetails;
 }
 
 export interface ImageTrackItem extends TrackItemBase {
@@ -93,7 +108,7 @@ export interface ITimelineStore {
   selectedGroupId: string | null;
   setSelectedGroupId: (id: string | null) => void;
 
-  trackItemsMap: Record<string, TrackItem | undefined>;
+  trackItemsMap: Record<string, TrackItem>;
   trackItemIds: string[];
   activeIds: string[];
   setActiveIds: (ids: string[]) => void;
@@ -110,10 +125,11 @@ export interface ITimelineStore {
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";
 
-export interface UploadItem {
+export interface UploadFile {
   id: string;
-  url: string;
+  file?: File;
+  url?: string;
   name: string;
   status: UploadStatus;
-  progress: number;
+  progress?: number;
 }

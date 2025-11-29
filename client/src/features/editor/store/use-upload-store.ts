@@ -1,18 +1,10 @@
-"use client";
-
 import { create } from "zustand";
 import { nanoid } from "nanoid";
+import { UploadFile } from "@/types";
+import useStore from "./use-store";
+import { normalizeVideoUrl } from "@/utils/normalize-url";
 
-export type UploadFile = {
-  id: string;
-  file?: File;
-  url?: string;
-  name: string;
-  status: "pending" | "uploading" | "success" | "error";
-  progress?: number;
-};
-
-interface UploadStore {
+export interface UploadStore {
   uploads: UploadFile[];
   showUploadModal: boolean;
   setShowUploadModal: (value: boolean) => void;
@@ -43,15 +35,17 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
               id: file.id,
               name: file.name,
               url: file.url,
-              status: "success",
+              status: "uploaded",
             };
           } else if (file.file) {
             uploadedItem = {
               id: file.id,
               name: file.file.name,
               file: file.file,
-              status: "success",
+              status: "uploaded",
             };
+          } else {
+            continue;
           }
 
           set({
@@ -59,6 +53,15 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
               f.id === file.id ? { ...uploadedItem } : f
             ),
           });
+
+          if (uploadedItem.url) {
+            const videoUrl = normalizeVideoUrl(uploadedItem.url);
+            const id = useStore.getState().addVideoTrackItem(videoUrl, {
+              name: uploadedItem.name,
+              trim: { start: 0, end: 5 },
+            });
+            useStore.getState().setActiveIds([id]);
+          }
         } catch (err) {
           set({
             uploads: uploads.map((f) =>

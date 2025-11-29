@@ -1,27 +1,71 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 
 interface NativePlayerProps {
-  src: string;
+  src: string | null;
   currentTime: number;
   onTimeUpdate: (t: number) => void;
+  playbackRate?: number;
 }
 
-const NativePlayer: React.FC<NativePlayerProps> = ({ src, currentTime, onTimeUpdate }) => {
+const NativePlayer: React.FC<NativePlayerProps> = ({
+  src,
+  currentTime,
+  onTimeUpdate,
+  playbackRate = 1,
+}) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.1) {
-      videoRef.current.currentTime = currentTime;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoaded = () => {
+      setIsLoaded(true);
+      video.currentTime = currentTime;
+      video.play().catch(() => {});
+    };
+
+    video.addEventListener("loadedmetadata", handleLoaded);
+    return () => video.removeEventListener("loadedmetadata", handleLoaded);
+  }, [src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && isLoaded && Math.abs(video.currentTime - currentTime) > 0.1) {
+      video.currentTime = currentTime;
     }
-  }, [currentTime, src]);
+  }, [currentTime, isLoaded]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.playbackRate = playbackRate;
+  }, [playbackRate]);
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) onTimeUpdate(videoRef.current.currentTime);
+    const video = videoRef.current;
+    if (video) onTimeUpdate(video.currentTime);
   };
 
-  return <video ref={videoRef} src={src} controls className="w-full h-full object-contain" onTimeUpdate={handleTimeUpdate} />;
+  if (!src) {
+    return (
+      <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white">
+        No video source provided.
+      </div>
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      controls
+      className="w-full h-full object-contain"
+      onTimeUpdate={handleTimeUpdate}
+    />
+  );
 };
 
 export default NativePlayer;
