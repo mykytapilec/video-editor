@@ -14,35 +14,46 @@ const Timeline: React.FC = () => {
 
   const pixelsPerSecond = 80 * zoom;
   const videoItems = Object.values(trackItemsMap).filter(
-    (item): item is VideoTrackItem => item?.type === "video" && !!item.src
+    (item): item is VideoTrackItem => item.type === "video" && !!item.src
   );
 
   const maxEndSec = Math.max(
-    ...videoItems.map((v) =>
-      v.timelineStart && v.trim
-        ? v.timelineStart + (v.trim.end - v.trim.start)
-        : 10
-    ),
+    ...videoItems.map((v) => v.duration ?? 10),
     10
   );
 
-  const gridLines = [];
-  for (let t = 0; t <= maxEndSec; t += GRID_STEP) {
-    gridLines.push(t);
-  }
+  const gridLines: number[] = [];
+  for (let t = 0; t <= maxEndSec; t += GRID_STEP) gridLines.push(t);
 
   return (
     <div className="relative w-full h-[200px] bg-gray-900 rounded-lg overflow-hidden p-3">
-      <div className="absolute inset-0 pointer-events-none">
-        {gridLines.map((t) => (
+      <div className="absolute inset-0 flex items-center pointer-events-none">
+        {videoItems.map((item) => (
           <div
-            key={t}
-            className="absolute top-0 bottom-0 border-l border-gray-700"
+            key={item.id}
+            className="absolute top-1/2 -translate-y-1/2 bg-gray-700 rounded-sm"
             style={{
-              left: t * pixelsPerSecond,
-              opacity: t % 1 === 0 ? 0.3 : 0.1,
+              left: 0,
+              width: (item.duration ?? 10) * pixelsPerSecond,
+              height: 20,
             }}
           />
+        ))}
+      </div>
+
+      <div className="absolute inset-0 pointer-events-none">
+        {gridLines.map((t) => (
+          <div key={t} className="absolute top-0 bottom-0" style={{ left: t * pixelsPerSecond }}>
+            <div
+              className="border-l border-gray-600"
+              style={{ opacity: t % 1 === 0 ? 0.4 : 0.1, height: "100%" }}
+            />
+            {t % 1 === 0 && (
+              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">
+                {t}s
+              </div>
+            )}
+          </div>
         ))}
       </div>
 

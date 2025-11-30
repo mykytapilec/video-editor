@@ -17,22 +17,16 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLeftResize, setIsLeftResize] = useState(false);
   const [isRightResize, setIsRightResize] = useState(false);
-
   const [thumbs, setThumbs] = useState<string[]>([]);
 
   const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
-
   if (!isVideo(item)) return null;
 
-  const duration = item.trim
-    ? item.trim.end - item.trim.start
-    : item.duration ?? 0;
-
+  const duration = item.trim ? item.trim.end - item.trim.start : item.duration ?? 0;
   const width = duration * pixelsPerSecond;
   const left = (item.timelineStart ?? 0) * pixelsPerSecond;
 
-  const snap = (value: number) =>
-    Math.round(value / snapStep) * snapStep;
+  const snap = (value: number) => Math.round(value / snapStep) * snapStep;
 
   useEffect(() => {
     if (!item.src || duration <= 0) return;
@@ -50,7 +44,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d")!;
       canvas.width = 120;
-      canvas.height = 70;
+      canvas.height = 60;
 
       const results: string[] = [];
 
@@ -74,7 +68,6 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isVideo(item)) return;
-
     const deltaPx = e.movementX;
     const deltaSec = deltaPx / pixelsPerSecond;
 
@@ -89,23 +82,13 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
     }
 
     if (isRightResize && item.trim) {
-      const newEnd = snap(
-        Math.max(item.trim.start + 0.1, item.trim.end + deltaSec)
-      );
-
-      updateTrackItem(item.id, {
-        trim: { ...item.trim, end: newEnd },
-      });
+      const newEnd = snap(Math.max(item.trim.start + 0.1, item.trim.end + deltaSec));
+      updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
     }
 
     if (isDragging) {
-      const newPos = snap(
-        Math.max(0, (item.timelineStart ?? 0) + deltaSec)
-      );
-
-      updateTrackItem(item.id, {
-        timelineStart: newPos,
-      });
+      const newPos = snap(Math.max(0, (item.timelineStart ?? 0) + deltaSec));
+      updateTrackItem(item.id, { timelineStart: newPos });
     }
   };
 
@@ -127,7 +110,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
   return (
     <div
       ref={blockRef}
-      className="absolute bg-gray-800 border border-sky-500 rounded-sm overflow-hidden select-none"
+      className="absolute bg-gray-800 border border-yellow-400 rounded-sm overflow-hidden select-none"
       style={{
         left,
         width,
@@ -140,14 +123,16 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       }}
     >
       <div className="flex h-full w-full">
-        {thumbs.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            className="object-cover border-r border-gray-700"
-            style={{ width: `${100 / thumbs.length}%` }}
-          />
-        ))}
+        {thumbs.length > 0
+          ? thumbs.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                className="object-cover border-r border-gray-700"
+                style={{ width: `${100 / thumbs.length}%` }}
+              />
+            ))
+          : <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">Preview</div>}
       </div>
 
       <div

@@ -1,4 +1,4 @@
-// /client/src/features/editor/store/use-store.ts
+// /Users/mikitapilets/Documents/dev/video-editor/client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import {
@@ -61,23 +61,23 @@ export default create<ITimelineStore>((set, get) => ({
 
   addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();
-    const trim = opts.trim ?? { start: 0, end: 5 };
+    const trim = (opts as Partial<VideoTrackItem>).trim ?? { start: 0, end: 5 };
     const duration = trim.end - trim.start;
 
     const item: VideoTrackItem = {
       id,
       type: "video",
-      name: opts.name ?? `Video ${id}`,
+      name: (opts as Partial<VideoTrackItem>).name ?? `Video ${id}`,
       src,
-      timelineStart: opts.timelineStart ?? 0,
+      timelineStart: (opts as Partial<VideoTrackItem>).timelineStart ?? 0,
       start: trim.start,
       end: trim.end,
       duration,
       trim,
-      playbackRate: opts.playbackRate ?? 1,
+      playbackRate: (opts as Partial<VideoTrackItem>).playbackRate ?? 1,
       details: {
         ...defaultVideoDetails,
-        ...(opts.details ?? {}),
+        ...((opts as Partial<VideoTrackItem>).details ?? {}),
       },
     };
 
@@ -98,7 +98,7 @@ export default create<ITimelineStore>((set, get) => ({
 
     if (item.type === "video") {
       const currentTrim = item.trim ?? { start: item.start, end: item.end };
-      const nextTrim = "trim" in patch && patch.trim ? patch.trim : currentTrim;
+      const nextTrim = "trim" in patch && (patch as Partial<VideoTrackItem>).trim ? (patch as Partial<VideoTrackItem>).trim! : currentTrim;
 
       const start = nextTrim.start;
       const end = nextTrim.end;
@@ -113,7 +113,7 @@ export default create<ITimelineStore>((set, get) => ({
         trim: nextTrim,
         details: {
           ...(item.details ?? defaultVideoDetails),
-          ...("details" in patch && patch.details ? patch.details : {}),
+          ...("details" in patch && (patch as any).details ? (patch as any).details : {}),
         },
       };
 
@@ -121,7 +121,7 @@ export default create<ITimelineStore>((set, get) => ({
         trackItemsMap: { ...state.trackItemsMap, [id]: updated },
       }));
     } else {
-      const updated: TrackItem = { ...item, ...patch };
+      const updated: TrackItem = { ...item, ...(patch as Partial<TrackItem>) };
       set((state) => ({
         trackItemsMap: { ...state.trackItemsMap, [id]: updated },
       }));
