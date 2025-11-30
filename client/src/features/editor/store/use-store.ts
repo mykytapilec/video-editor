@@ -1,7 +1,12 @@
 // /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
-import { TrackItem, VideoTrackItem, ITimelineStore, ExtendedVideoDetails } from "@/types";
 import { nanoid } from "nanoid";
+import {
+  TrackItem,
+  VideoTrackItem,
+  ITimelineStore,
+  ExtendedVideoDetails,
+} from "@/types";
 
 const defaultVideoDetails: ExtendedVideoDetails = {
   volume: 100,
@@ -12,7 +17,7 @@ const defaultVideoDetails: ExtendedVideoDetails = {
   boxShadow: { color: "transparent", x: 0, y: 0, blur: 0 },
 };
 
-const useStore = create<ITimelineStore>((set, get) => ({
+export default create<ITimelineStore>((set, get) => ({
   playerRef: null,
   setPlayerRef: (ref) => set({ playerRef: ref }),
 
@@ -27,48 +32,57 @@ const useStore = create<ITimelineStore>((set, get) => ({
 
   groups: [],
   groupsLoaded: false,
+
   selectedGroupId: null,
-  setSelectedGroupId: (id: string | null) => set({ selectedGroupId: id }),
+  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
   trackItemsMap: {},
   trackItemIds: [],
+
   activeIds: [],
-  setActiveIds: (ids: string[]) => {
+  setActiveIds: (ids) => {
     set({ activeIds: ids });
+
     if (ids.length === 1) {
       const id = ids[0];
       const item = get().trackItemsMap[id];
-      if (item?.type === "video" && item.src) set({ currentVideoSrc: item.src });
+      if (item?.type === "video" && item.src) {
+        set({ currentVideoSrc: item.src });
+      }
     }
   },
 
   currentVideoSrc: null,
   currentTime: 0,
-  setCurrentVideoSrc: (src: string | null) => set({ currentVideoSrc: src }),
-  setCurrentTime: (t: number) => set({ currentTime: t }),
+  setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
+  setCurrentTime: (t) => set({ currentTime: t }),
 
-  setState: (partial: Partial<ITimelineStore>) => set(partial),
+  setState: (partial) => set(partial),
 
-  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => {
+  addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();
-    const trim = opts?.trim || { start: 0, end: 5 };
+    const trim = opts.trim ?? { start: 0, end: 5 };
+    const duration = trim.end - trim.start;
 
-    const newItem: VideoTrackItem = {
+    const item: VideoTrackItem = {
       id,
       type: "video",
+      name: opts.name ?? `Video ${id}`,
       src,
-      name: opts?.name ?? `Video ${id}`,
-      trim,
+      timelineStart: opts.timelineStart ?? 0,
       start: trim.start,
       end: trim.end,
-      timelineStart: opts?.timelineStart ?? 0,
-      duration: trim.end - trim.start,
-      details: { ...defaultVideoDetails, ...(opts?.details ?? {}) },
-      playbackRate: opts?.playbackRate ?? 1,
+      duration,
+      trim,
+      playbackRate: opts.playbackRate ?? 1,
+      details: {
+        ...defaultVideoDetails,
+        ...(opts.details ?? {}),
+      },
     };
 
     set((state) => ({
-      trackItemsMap: { ...state.trackItemsMap, [id]: newItem },
+      trackItemsMap: { ...state.trackItemsMap, [id]: item },
       trackItemIds: [...state.trackItemIds, id],
     }));
 
@@ -78,35 +92,39 @@ const useStore = create<ITimelineStore>((set, get) => ({
     return id;
   },
 
-  updateTrackItem: (id: string, patch: Partial<TrackItem>) => {
+  updateTrackItem: (id, patch) => {
     const item = get().trackItemsMap[id];
     if (!item) return;
 
     if (item.type === "video") {
-      const p = patch as Partial<VideoTrackItem>;
+      const currentTrim = item.trim ?? { start: item.start, end: item.end };
+      const nextTrim = "trim" in patch && patch.trim ? patch.trim : currentTrim;
 
-      const mergedDetails: ExtendedVideoDetails = {
-        ...(item.details ?? defaultVideoDetails),
-        ...(p.details ?? {}),
-      };
+      const start = nextTrim.start;
+      const end = nextTrim.end;
+      const duration = end - start;
 
       const updated: VideoTrackItem = {
         ...item,
-        ...(p as any),
-        details: mergedDetails,
-        trim: p.trim ?? item.trim,
+        ...(patch as Partial<VideoTrackItem>),
+        start,
+        end,
+        duration,
+        trim: nextTrim,
+        details: {
+          ...(item.details ?? defaultVideoDetails),
+          ...("details" in patch && patch.details ? patch.details : {}),
+        },
       };
 
       set((state) => ({
         trackItemsMap: { ...state.trackItemsMap, [id]: updated },
       }));
     } else {
-      const updated = { ...item, ...patch } as TrackItem;
+      const updated: TrackItem = { ...item, ...patch };
       set((state) => ({
         trackItemsMap: { ...state.trackItemsMap, [id]: updated },
       }));
     }
   },
 }));
-
-export default useStore;

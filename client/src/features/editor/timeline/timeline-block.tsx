@@ -5,49 +5,81 @@ import { VideoTrackItem, TrackItem } from "@/types";
 interface Props {
   item: TrackItem;
   pixelsPerSecond: number;
-  onClick?: () => void;
+  snapStep: number;
 }
 
-const HANDLE_WIDTH = 6;
+const HANDLE_WIDTH = 8;
 
-export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
+export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
   const { updateTrackItem } = useStore();
   const blockRef = useRef<HTMLDivElement | null>(null);
 
-  const [isLeftDragging, setIsLeftDragging] = useState(false);
-  const [isRightDragging, setIsRightDragging] = useState(false);
-  const [width, setWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLeftResize, setIsLeftResize] = useState(false);
+  const [isRightResize, setIsRightResize] = useState(false);
+
+  const [thumbs, setThumbs] = useState<string[]>([]);
 
   const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
 
+  if (!isVideo(item)) return null;
+
+  const duration = item.trim
+    ? item.trim.end - item.trim.start
+    : item.duration ?? 0;
+
+  const width = duration * pixelsPerSecond;
+  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
+
+  const snap = (value: number) =>
+    Math.round(value / snapStep) * snapStep;
+
   useEffect(() => {
-    if (isVideo(item)) {
-      const duration = item.trim ? item.trim.end - item.trim.start : item.duration ?? 0;
-      setWidth(duration * pixelsPerSecond);
-    } else {
-      setWidth(0);
-    }
-  }, [item, pixelsPerSecond]);
+    if (!item.src || duration <= 0) return;
 
-  const onLeftDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsLeftDragging(true);
-  };
+    const video = document.createElement("video");
+    video.src = item.src;
+    video.crossOrigin = "anonymous";
 
-  const onRightDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsRightDragging(true);
-  };
+    const frameCount = Math.max(3, Math.floor(width / 80));
+    const times = Array.from({ length: frameCount }, (_, i) =>
+      item.trim!.start + (i / (frameCount - 1)) * duration
+    );
 
-  const onMouseMove = (e: MouseEvent) => {
-    if (!isLeftDragging && !isRightDragging) return;
+    const loadFrames = async () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d")!;
+      canvas.width = 120;
+      canvas.height = 70;
+
+      const results: string[] = [];
+
+      for (const t of times) {
+        video.currentTime = t;
+
+        await new Promise((res) => {
+          video.onseeked = () => {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            results.push(canvas.toDataURL("image/jpeg"));
+            res(true);
+          };
+        });
+      }
+
+      setThumbs(results);
+    };
+
+    video.onloadeddata = () => loadFrames();
+  }, [item.src, duration, item.trim?.start, item.trim?.end, width]);
+
+  const handleMouseMove = (e: MouseEvent) => {
     if (!isVideo(item)) return;
 
     const deltaPx = e.movementX;
     const deltaSec = deltaPx / pixelsPerSecond;
 
-    if (isLeftDragging && item.trim) {
-      const newStart = Math.max(0, item.trim.start + deltaSec);
+    if (isLeftResize && item.trim) {
+      const newStart = snap(Math.max(0, item.trim.start + deltaSec));
       const shift = newStart - item.trim.start;
 
       updateTrackItem(item.id, {
@@ -56,50 +88,90 @@ export const TimelineBlock = ({ item, pixelsPerSecond }: Props) => {
       });
     }
 
-    if (isRightDragging && item.trim) {
-      const newEnd = Math.max(item.trim.start + 0.1, item.trim.end + deltaSec);
-      updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
+    if (isRightResize && item.trim) {
+      const newEnd = snap(
+        Math.max(item.trim.start + 0.1, item.trim.end + deltaSec)
+      );
+
+      updateTrackItem(item.id, {
+        trim: { ...item.trim, end: newEnd },
+      });
+    }
+
+    if (isDragging) {
+      const newPos = snap(
+        Math.max(0, (item.timelineStart ?? 0) + deltaSec)
+      );
+
+      updateTrackItem(item.id, {
+        timelineStart: newPos,
+      });
     }
   };
 
-  const stop = () => {
-    setIsLeftDragging(false);
-    setIsRightDragging(false);
+  const stopActions = () => {
+    setIsDragging(false);
+    setIsLeftResize(false);
+    setIsRightResize(false);
   };
 
   useEffect(() => {
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", stop);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", stopActions);
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", stopActions);
     };
   });
-
-  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
 
   return (
     <div
       ref={blockRef}
-      className="relative bg-sky-400 rounded-sm"
-      style={{ position: "absolute", left, width, height: 32 }}
+      className="absolute bg-gray-800 border border-sky-500 rounded-sm overflow-hidden select-none"
+      style={{
+        left,
+        width,
+        height: 60,
+        cursor: isDragging ? "grabbing" : "grab",
+      }}
+      onMouseDown={(e) => {
+        if ((e.target as HTMLElement).dataset.handle) return;
+        setIsDragging(true);
+      }}
     >
-      {isVideo(item) && (
-        <>
-          <div
-            onMouseDown={onLeftDown}
-            className="absolute left-0 top-0 h-full bg-blue-900 cursor-ew-resize"
-            style={{ width: HANDLE_WIDTH }}
+      <div className="flex h-full w-full">
+        {thumbs.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            className="object-cover border-r border-gray-700"
+            style={{ width: `${100 / thumbs.length}%` }}
           />
-          <div
-            onMouseDown={onRightDown}
-            className="absolute right-0 top-0 h-full bg-blue-900 cursor-ew-resize"
-            style={{ width: HANDLE_WIDTH }}
-          />
-        </>
-      )}
-      <div className="text-xs text-white px-2">
-        {item.type} • {isVideo(item) && item.trim ? Math.round((item.trim.end - item.trim.start) * 1000) / 1000 : 0}s
+        ))}
+      </div>
+
+      <div
+        data-handle="left"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setIsLeftResize(true);
+        }}
+        className="absolute left-0 top-0 h-full bg-blue-700 opacity-70"
+        style={{ width: HANDLE_WIDTH, cursor: "ew-resize" }}
+      />
+
+      <div
+        data-handle="right"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setIsRightResize(true);
+        }}
+        className="absolute right-0 top-0 h-full bg-blue-700 opacity-70"
+        style={{ width: HANDLE_WIDTH, cursor: "ew-resize" }}
+      />
+
+      <div className="absolute bottom-0 right-0 px-1 text-white text-xs bg-black/40">
+        {Math.round(duration * 100) / 100}s
       </div>
     </div>
   );

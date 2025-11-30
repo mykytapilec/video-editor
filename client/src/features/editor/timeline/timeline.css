@@ -1,0 +1,21 @@
+.timeline-scroll {
+  scrollbar-width: thin;
+}
+
+.thumb-wrapper {
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.thumb-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.timeline-block {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.6);
+}
