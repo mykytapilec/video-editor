@@ -1,7 +1,6 @@
-// /client/src/features/editor/timeline/timeline-block.tsx
 import React, { useRef, useState, useEffect } from "react";
-import useStore from "../store/use-store";
 import { VideoTrackItem, TrackItem } from "@/types";
+import useStore from "../store/use-store";
 
 interface Props {
   item: TrackItem;
@@ -11,7 +10,7 @@ interface Props {
 
 const HANDLE_WIDTH = 8;
 
-export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
+export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
   const { updateTrackItem } = useStore();
   const blockRef = useRef<HTMLDivElement | null>(null);
 
@@ -23,13 +22,9 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
   const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
   if (!isVideo(item)) return null;
 
-  const trimStart = item.trim?.start ?? item.start;
-  const trimEnd = item.trim?.end ?? item.end;
-  const timelineStart = item.timelineStart ?? 0;
-
-  const duration = trimEnd - trimStart;
+  const duration = item.trim ? item.trim.end - item.trim.start : item.duration ?? 0;
   const width = duration * pixelsPerSecond;
-  const left = timelineStart * pixelsPerSecond;
+  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
 
   const snap = (value: number) => Math.round(value / snapStep) * snapStep;
 
@@ -42,14 +37,15 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
 
     const frameCount = Math.max(3, Math.floor(width / 80));
     const times = Array.from({ length: frameCount }, (_, i) =>
-      trimStart + (i / (frameCount - 1)) * duration
+      (item.trim?.start ?? 0) + (i / (frameCount - 1)) * duration
     );
 
     const loadFrames = async () => {
       const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d")!;
       canvas.width = 120;
       canvas.height = 60;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
       const results: string[] = [];
 
@@ -69,31 +65,29 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
     };
 
     video.onloadeddata = () => loadFrames();
-  }, [item.src, duration, trimStart, trimEnd, width]);
+  }, [item.src, duration, item.trim?.start, item.trim?.end, width]);
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isVideo(item)) return;
-
     const deltaPx = e.movementX;
     const deltaSec = deltaPx / pixelsPerSecond;
 
-    if (isLeftResize) {
-      const newStart = snap(Math.max(0, trimStart + deltaSec));
-      const shift = newStart - trimStart;
-
+    if (isLeftResize && item.trim) {
+      const newStart = snap(Math.max(0, item.trim.start + deltaSec));
+      const shift = newStart - item.trim.start;
       updateTrackItem(item.id, {
         trim: { ...item.trim, start: newStart },
-        timelineStart: timelineStart + shift,
+        timelineStart: (item.timelineStart ?? 0) + shift,
       });
     }
 
-    if (isRightResize) {
-      const newEnd = snap(Math.max(trimStart + 0.1, trimEnd + deltaSec));
+    if (isRightResize && item.trim) {
+      const newEnd = snap(Math.max(item.trim.start + 0.1, item.trim.end + deltaSec));
       updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
     }
 
     if (isDragging) {
-      const newPos = snap(Math.max(0, timelineStart + deltaSec));
+      const newPos = snap(Math.max(0, (item.timelineStart ?? 0) + deltaSec));
       updateTrackItem(item.id, { timelineStart: newPos });
     }
   };
@@ -120,7 +114,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       style={{
         left,
         width,
-        height: 60,
+        height: 100,
         cursor: isDragging ? "grabbing" : "grab",
       }}
       onMouseDown={(e) => {
@@ -129,20 +123,16 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       }}
     >
       <div className="flex h-full w-full">
-        {thumbs.length > 0 ? (
-          thumbs.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              className="object-cover border-r border-gray-700"
-              style={{ width: `${100 / thumbs.length}%` }}
-            />
-          ))
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">
-            Preview
-          </div>
-        )}
+        {thumbs.length > 0
+          ? thumbs.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                className="object-cover border-r border-gray-700"
+                style={{ width: `${100 / thumbs.length}%` }}
+              />
+            ))
+          : <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">Loading...</div>}
       </div>
 
       <div

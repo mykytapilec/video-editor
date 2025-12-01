@@ -1,43 +1,45 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import useStore from "../store/use-store";
 import { VideoTrackItem } from "@/types";
 import { TimelineBlock } from "./timeline-block";
+import useStore from "../store/use-store";
 
 const GRID_STEP = 0.5;
 
 const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
-
-  const { trackItemsMap, videoDuration } = useStore();
+  const { trackItemsMap } = useStore();
 
   const pixelsPerSecond = 80 * zoom;
-
-  const totalDuration = videoDuration ?? 10;
-
-  const gridLines: number[] = [];
-  for (let t = 0; t <= totalDuration; t += GRID_STEP) gridLines.push(t);
-
   const videoItems = Object.values(trackItemsMap).filter(
     (item): item is VideoTrackItem => item.type === "video" && !!item.src
   );
 
+  const maxEndSec = Math.max(...videoItems.map((v) => v.duration ?? 10), 10);
+
+  const gridLines: number[] = [];
+  for (let t = 0; t <= maxEndSec; t += GRID_STEP) gridLines.push(t);
+
   return (
     <div className="relative w-full h-[200px] bg-gray-900 rounded-lg overflow-hidden p-3">
-
+      {/* Фоновая дорожка видео */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
-        <div
-          className="absolute top-1/2 -translate-y-1/2 bg-gray-700 rounded-sm"
-          style={{
-            left: 0,
-            width: totalDuration * pixelsPerSecond,
-            height: 20,
-          }}
-        />
+        {videoItems.map((item) => (
+          <div
+            key={item.id}
+            className="absolute top-1/2 -translate-y-1/2 bg-gray-700 rounded-sm"
+            style={{
+              left: 0,
+              width: (item.duration ?? 10) * pixelsPerSecond,
+              height: 40,
+            }}
+          />
+        ))}
       </div>
 
+      {/* Сетка */}
       <div className="absolute inset-0 pointer-events-none">
         {gridLines.map((t) => (
           <div key={t} className="absolute top-0 bottom-0" style={{ left: t * pixelsPerSecond }}>
@@ -46,23 +48,27 @@ const Timeline: React.FC = () => {
               style={{ opacity: t % 1 === 0 ? 0.4 : 0.1, height: "100%" }}
             />
             {t % 1 === 0 && (
-              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">{t}s</div>
+              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">
+                {t}s
+              </div>
             )}
           </div>
         ))}
       </div>
 
+      {/* Таймлайн-блоки */}
       <div className="absolute inset-0 px-2">
         {videoItems.map((item) => (
           <TimelineBlock
             key={item.id}
             item={item}
             pixelsPerSecond={pixelsPerSecond}
-            snapStep={GRID_STEP}
+            snapStep={GRID_STEP} // теперь есть типизация
           />
         ))}
       </div>
 
+      {/* Zoom */}
       <div className="absolute top-2 right-2 flex gap-2">
         <button
           onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}
