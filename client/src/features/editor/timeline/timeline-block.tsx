@@ -1,3 +1,4 @@
+// /client/src/features/editor/timeline/timeline-block.tsx
 import React, { useRef, useState, useEffect } from "react";
 import useStore from "../store/use-store";
 import { VideoTrackItem, TrackItem } from "@/types";
@@ -22,9 +23,13 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
   const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
   if (!isVideo(item)) return null;
 
-  const duration = item.trim ? item.trim.end - item.trim.start : item.duration ?? 0;
+  const trimStart = item.trim?.start ?? item.start;
+  const trimEnd = item.trim?.end ?? item.end;
+  const timelineStart = item.timelineStart ?? 0;
+
+  const duration = trimEnd - trimStart;
   const width = duration * pixelsPerSecond;
-  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
+  const left = timelineStart * pixelsPerSecond;
 
   const snap = (value: number) => Math.round(value / snapStep) * snapStep;
 
@@ -37,7 +42,7 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
 
     const frameCount = Math.max(3, Math.floor(width / 80));
     const times = Array.from({ length: frameCount }, (_, i) =>
-      item.trim!.start + (i / (frameCount - 1)) * duration
+      trimStart + (i / (frameCount - 1)) * duration
     );
 
     const loadFrames = async () => {
@@ -51,11 +56,11 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       for (const t of times) {
         video.currentTime = t;
 
-        await new Promise((res) => {
+        await new Promise<void>((res) => {
           video.onseeked = () => {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             results.push(canvas.toDataURL("image/jpeg"));
-            res(true);
+            res();
           };
         });
       }
@@ -64,30 +69,31 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
     };
 
     video.onloadeddata = () => loadFrames();
-  }, [item.src, duration, item.trim?.start, item.trim?.end, width]);
+  }, [item.src, duration, trimStart, trimEnd, width]);
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isVideo(item)) return;
+
     const deltaPx = e.movementX;
     const deltaSec = deltaPx / pixelsPerSecond;
 
-    if (isLeftResize && item.trim) {
-      const newStart = snap(Math.max(0, item.trim.start + deltaSec));
-      const shift = newStart - item.trim.start;
+    if (isLeftResize) {
+      const newStart = snap(Math.max(0, trimStart + deltaSec));
+      const shift = newStart - trimStart;
 
       updateTrackItem(item.id, {
         trim: { ...item.trim, start: newStart },
-        timelineStart: (item.timelineStart ?? 0) + shift,
+        timelineStart: timelineStart + shift,
       });
     }
 
-    if (isRightResize && item.trim) {
-      const newEnd = snap(Math.max(item.trim.start + 0.1, item.trim.end + deltaSec));
+    if (isRightResize) {
+      const newEnd = snap(Math.max(trimStart + 0.1, trimEnd + deltaSec));
       updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
     }
 
     if (isDragging) {
-      const newPos = snap(Math.max(0, (item.timelineStart ?? 0) + deltaSec));
+      const newPos = snap(Math.max(0, timelineStart + deltaSec));
       updateTrackItem(item.id, { timelineStart: newPos });
     }
   };
@@ -123,16 +129,20 @@ export const TimelineBlock = ({ item, pixelsPerSecond, snapStep }: Props) => {
       }}
     >
       <div className="flex h-full w-full">
-        {thumbs.length > 0
-          ? thumbs.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                className="object-cover border-r border-gray-700"
-                style={{ width: `${100 / thumbs.length}%` }}
-              />
-            ))
-          : <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">Preview</div>}
+        {thumbs.length > 0 ? (
+          thumbs.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              className="object-cover border-r border-gray-700"
+              style={{ width: `${100 / thumbs.length}%` }}
+            />
+          ))
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">
+            Preview
+          </div>
+        )}
       </div>
 
       <div

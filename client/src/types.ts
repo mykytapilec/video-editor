@@ -121,6 +121,9 @@ export interface ITimelineStore {
 
   addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => string;
   updateTrackItem: (id: string, patch: Partial<TrackItem>) => void;
+
+  videoDuration: number;
+  setVideoDuration: (d: number) => void;
 }
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";

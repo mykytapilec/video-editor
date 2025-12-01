@@ -1,4 +1,4 @@
-// /Users/mikitapilets/Documents/dev/video-editor/client/src/features/editor/store/use-store.ts
+// /client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import {
@@ -58,6 +58,9 @@ export default create<ITimelineStore>((set, get) => ({
   setCurrentTime: (t) => set({ currentTime: t }),
 
   setState: (partial) => set(partial),
+
+  videoDuration: 0,
+  setVideoDuration: (d: number) => set({ videoDuration: d }),
 
   addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();

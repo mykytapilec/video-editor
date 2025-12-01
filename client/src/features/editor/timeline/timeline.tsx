@@ -10,35 +10,32 @@ const GRID_STEP = 0.5;
 const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
-  const { trackItemsMap } = useStore();
+
+  const { trackItemsMap, videoDuration } = useStore();
 
   const pixelsPerSecond = 80 * zoom;
+
+  const totalDuration = videoDuration ?? 10;
+
+  const gridLines: number[] = [];
+  for (let t = 0; t <= totalDuration; t += GRID_STEP) gridLines.push(t);
+
   const videoItems = Object.values(trackItemsMap).filter(
     (item): item is VideoTrackItem => item.type === "video" && !!item.src
   );
 
-  const maxEndSec = Math.max(
-    ...videoItems.map((v) => v.duration ?? 10),
-    10
-  );
-
-  const gridLines: number[] = [];
-  for (let t = 0; t <= maxEndSec; t += GRID_STEP) gridLines.push(t);
-
   return (
     <div className="relative w-full h-[200px] bg-gray-900 rounded-lg overflow-hidden p-3">
+
       <div className="absolute inset-0 flex items-center pointer-events-none">
-        {videoItems.map((item) => (
-          <div
-            key={item.id}
-            className="absolute top-1/2 -translate-y-1/2 bg-gray-700 rounded-sm"
-            style={{
-              left: 0,
-              width: (item.duration ?? 10) * pixelsPerSecond,
-              height: 20,
-            }}
-          />
-        ))}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 bg-gray-700 rounded-sm"
+          style={{
+            left: 0,
+            width: totalDuration * pixelsPerSecond,
+            height: 20,
+          }}
+        />
       </div>
 
       <div className="absolute inset-0 pointer-events-none">
@@ -49,9 +46,7 @@ const Timeline: React.FC = () => {
               style={{ opacity: t % 1 === 0 ? 0.4 : 0.1, height: "100%" }}
             />
             {t % 1 === 0 && (
-              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">
-                {t}s
-              </div>
+              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">{t}s</div>
             )}
           </div>
         ))}

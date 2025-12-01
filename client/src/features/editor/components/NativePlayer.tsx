@@ -1,6 +1,8 @@
+// client/src/features/editor/components/NativePlayer.tsx
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
+import useStore from "../store/use-store";
 
 interface NativePlayerProps {
   src: string | null;
@@ -18,11 +20,15 @@ const NativePlayer: React.FC<NativePlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const setVideoDuration = useStore((s) => s.setVideoDuration);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleLoaded = () => {
+      setVideoDuration(video.duration);
+
       setIsLoaded(true);
       video.currentTime = currentTime;
       video.play().catch(() => {});
