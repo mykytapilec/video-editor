@@ -10,10 +10,6 @@ interface Props {
 
 const HANDLE_WIDTH = 8;
 
-/**
- * TimelineBlock — отображает один редактируемый блок (trim) с мини-превью (strip).
- * Вариант A: N равномерных кадров, отображаемых в ряд.
- */
 export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
   const { updateTrackItem } = useStore();
   const blockRef = useRef<HTMLDivElement | null>(null);
@@ -325,7 +321,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
           thumbs.map((src, i) => (
             <img
               key={i}
-              src={src}
+              src={src || undefined}
               className="object-cover border-r border-gray-700"
               style={{ width: `${100 / thumbs.length}%`, height: "100%" }}
               alt={`thumb-${i}`}
