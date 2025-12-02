@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { VideoTrackItem } from "@/types";
-import { TimelineBlock } from "./timeline-block";
+import TimelineBlock from "./timeline-block";
 import useStore from "../store/use-store";
 
 const GRID_STEP = 0.5;
@@ -23,8 +23,8 @@ const Timeline: React.FC = () => {
   for (let t = 0; t <= maxEndSec; t += GRID_STEP) gridLines.push(t);
 
   return (
-    <div className="relative w-full h-[200px] bg-gray-900 rounded-lg overflow-hidden p-3">
-      {/* Фоновая дорожка видео */}
+    <div className="relative w-full h-[220px] bg-gray-900 rounded-lg overflow-hidden p-3">
+      {/* Background full-length track(s) (visual only) */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         {videoItems.map((item) => (
           <div
@@ -33,22 +33,22 @@ const Timeline: React.FC = () => {
             style={{
               left: 0,
               width: (item.duration ?? 10) * pixelsPerSecond,
-              height: 40,
+              height: 48,
             }}
           />
         ))}
       </div>
 
-      {/* Сетка */}
+      {/* Grid (seconds labelled) */}
       <div className="absolute inset-0 pointer-events-none">
         {gridLines.map((t) => (
           <div key={t} className="absolute top-0 bottom-0" style={{ left: t * pixelsPerSecond }}>
             <div
               className="border-l border-gray-600"
-              style={{ opacity: t % 1 === 0 ? 0.4 : 0.1, height: "100%" }}
+              style={{ opacity: t % 1 === 0 ? 0.45 : 0.12, height: "100%" }}
             />
             {t % 1 === 0 && (
-              <div className="absolute top-0 left-0 text-gray-300 text-[10px]">
+              <div className="absolute top-1 left-1 text-gray-300 text-[10px] select-none">
                 {t}s
               </div>
             )}
@@ -56,14 +56,14 @@ const Timeline: React.FC = () => {
         ))}
       </div>
 
-      {/* Таймлайн-блоки */}
+      {/* Blocks (interactive; handles + drag are in block) */}
       <div className="absolute inset-0 px-2">
         {videoItems.map((item) => (
           <TimelineBlock
             key={item.id}
             item={item}
             pixelsPerSecond={pixelsPerSecond}
-            snapStep={GRID_STEP} // теперь есть типизация
+            snapStep={GRID_STEP}
           />
         ))}
       </div>
