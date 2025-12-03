@@ -19,7 +19,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
         transition: "width 0.2s ease",
       }}
     >
-      <div className="absolute inset-0 bg-neutral-700 opacity-60" />
+      <div className="absolute inset-0 pointer-events-none" />
       {children}
     </div>
   );

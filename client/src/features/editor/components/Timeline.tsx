@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { TimelineContainer } from "../timeline/TimelineContainer";
+import { TimelineContainer } from "../timeline/timeline-container";
 import { IntervalLayer } from "../timeline/IntervalLayer";
 
 export interface TimelineProps {
