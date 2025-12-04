@@ -6,7 +6,7 @@ type Props = {
 };
 
 export default function TimelineRuler({ width, pixelsPerSecond }: Props) {
-  const totalSec = width / pixelsPerSecond;
+  const totalSec = Math.ceil(width / pixelsPerSecond);
 
   let step = 1;
 
@@ -26,7 +26,7 @@ export default function TimelineRuler({ width, pixelsPerSecond }: Props) {
           return (
             <div
               key={t}
-              className="absolute"
+              className="absolute flex flex-col items-center"
               style={{ left, transform: "translateX(-50%)" }}
             >
               <div

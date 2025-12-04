@@ -1,29 +1,34 @@
 "use client";
 
 import React, { JSX } from "react";
+import useStore from "../store/use-store";
 
 interface IntervalLayerProps {
   zoom: number;
 }
 
 export const IntervalLayer: React.FC<IntervalLayerProps> = ({ zoom }) => {
+  const { trackItemsMap } = useStore();
+
   const pixelsPerSecond = 100 * zoom;
 
-  const totalWidth = 20000;
+  const maxEnd = Math.max(
+    ...Object.values(trackItemsMap).map(
+      (item) => (item.timelineStart ?? 0) + (item.duration ?? 0)
+    ),
+    10
+  );
 
-  const totalSeconds = totalWidth / pixelsPerSecond;
-
-  let step = 1;
-  if (zoom < 0.7) step = 5;
-  else if (zoom < 1.0) step = 2;
-  else if (zoom < 2.0) step = 1;
-  else step = 0.5;
+  const step = (() => {
+    if (zoom < 0.5) return 5;
+    if (zoom < 1.0) return 2;
+    if (zoom < 2.0) return 1;
+    return 0.5;
+  })();
 
   const marks: JSX.Element[] = [];
-
-  for (let t = 0; t < totalSeconds; t += step) {
+  for (let t = 0; t <= maxEnd; t += step) {
     const left = t * pixelsPerSecond;
-
     marks.push(
       <div
         key={t}

@@ -1,63 +1,59 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import { VideoTrackItem } from "@/types";
-import { TimelineBlock } from "./timeline-block";
-import useStore from "../store/use-store";
+import React, { useState, useRef, useEffect } from "react";
 import { TimelineContainer } from "./timeline-container";
 import TimelineRuler from "./timeline-ruler";
 
-const GRID_STEP = 0.5;
-
 const Timeline: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState(1);
-  const { trackItemsMap, videoDuration } = useStore();
+  const [baseWidth, setBaseWidth] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const videoItems = Object.values(trackItemsMap).filter(
-    (item): item is VideoTrackItem => item.type === "video" && !!item.src
-  );
+  const handleZoom = (delta: number) => {
+    setZoom((z) => Math.min(Math.max(z + delta, 0.25), 4));
+  };
 
-  const maxEndSec = Math.max(...videoItems.map((v) => v.duration ?? 10), 10);
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-  const pixelsPerSecond = 80 * zoom;
-  const width = Math.max(maxEndSec * pixelsPerSecond, 600);
+    const updateWidth = () => {
+      setBaseWidth(containerRef.current!.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const width = baseWidth * zoom;
+  const pixelsPerSecond = 100 * zoom;
 
   return (
-    <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
-      <div
-        ref={containerRef}
-        className="w-full h-full overflow-x-auto relative"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <TimelineContainer width={width}>
-          <TimelineRuler width={width} pixelsPerSecond={pixelsPerSecond} />
-
-          {videoItems.map((item) => (
-            <TimelineBlock
-              key={item.id}
-              item={item}
-              pixelsPerSecond={pixelsPerSecond}
-              snapStep={GRID_STEP}
-            />
-          ))}
-        </TimelineContainer>
-      </div>
-
-      <div className="absolute top-2 right-2 flex gap-2">
+    <div
+      ref={containerRef}
+      className="relative w-full h-40 bg-neutral-800 rounded-xl overflow-hidden select-none"
+    >
+      <div className="absolute top-2 right-2 z-20 flex gap-2">
         <button
-          onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}
-          className="px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600"
-        >
-          -
-        </button>
-        <button
-          onClick={() => setZoom((z) => Math.min(6, z + 0.2))}
-          className="px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600"
+          onClick={() => handleZoom(0.25)}
+          className="bg-neutral-700 px-2 py-1 rounded hover:bg-neutral-600"
         >
           +
         </button>
+        <button
+          onClick={() => handleZoom(-0.25)}
+          className="bg-neutral-700 px-2 py-1 rounded hover:bg-neutral-600"
+        >
+          −
+        </button>
       </div>
+
+      <TimelineContainer width={width}>
+        <TimelineRuler width={width} pixelsPerSecond={pixelsPerSecond} />
+      </TimelineContainer>
     </div>
   );
 };

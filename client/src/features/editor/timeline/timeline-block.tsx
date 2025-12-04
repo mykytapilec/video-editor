@@ -1,9 +1,10 @@
+// timeline-block.tsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { VideoTrackItem, TrackItem } from "@/types";
 import useStore from "../store/use-store";
 
 interface Props {
-  item: VideoTrackItem;
+  item: TrackItem;
   pixelsPerSecond: number;
   snapStep: number;
 }
@@ -11,6 +12,9 @@ interface Props {
 const HANDLE_WIDTH = 8;
 
 export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
+  if (item.type !== "video") return null;
+
+  const videoItem = item as VideoTrackItem;
   const { updateTrackItem } = useStore();
   const blockRef = useRef<HTMLDivElement | null>(null);
 
@@ -21,23 +25,25 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
   const suspendRef = useRef(false);
   const pendingGenRef = useRef<number | null>(null);
 
-  const trim = item.trim ?? { start: item.start, end: item.end };
-  const duration = trim ? trim.end - trim.start : item.duration ?? 0;
+  const trim = videoItem.trim ?? { start: videoItem.start, end: videoItem.end ?? videoItem.start + 5 };
+  const duration = trim.end - trim.start;
   const width = Math.max(1, duration * pixelsPerSecond);
-  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
+  const left = (videoItem.timelineStart ?? 0) * pixelsPerSecond;
 
   const snap = (value: number) => Math.round(value / snapStep) * snapStep;
 
   const generateThumbnailsNow = useCallback(async () => {
-    if (!item.src || duration <= 0) {
+    const videoSrc = videoItem.src;
+    if (!videoSrc || duration <= 0) {
       setThumbs([]);
       return;
     }
 
     const times = [trim.start, Math.max(trim.start + 0.001, trim.end)];
+
     try {
       const video = document.createElement("video");
-      video.src = item.src;
+      video.src = videoSrc;
       video.crossOrigin = "anonymous";
 
       await new Promise<void>((res) => {
@@ -49,10 +55,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         };
         video.addEventListener("loadedmetadata", onLoad, { once: true });
         setTimeout(() => {
-          if (!done) {
-            done = true;
-            res();
-          }
+          if (!done) res();
         }, 2500);
       });
 
@@ -69,7 +72,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
 
       for (const t of times) {
         try {
-          video.currentTime = Math.min(Math.max(0, t), (video.duration || t));
+          video.currentTime = Math.min(Math.max(0, t), video.duration || t);
         } catch {}
 
         await new Promise<void>((res) => {
@@ -100,10 +103,10 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
     } catch {
       setThumbs([]);
     }
-  }, [item.src, trim.start, trim.end, duration]);
+  }, [videoItem.src, trim.start, trim.end, duration]);
 
   useEffect(() => {
-    if (!item.src || duration <= 0) {
+    if (!videoItem.src || duration <= 0) {
       setThumbs([]);
       return;
     }
@@ -119,28 +122,28 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
     }, 180);
 
     return () => clearTimeout(id);
-  }, [item.src, trim.start, trim.end, duration, generateThumbnailsNow]);
+  }, [videoItem.src, trim.start, trim.end, duration, generateThumbnailsNow]);
 
   const handleMouseMove = (e: MouseEvent) => {
     const deltaSec = e.movementX / pixelsPerSecond;
 
-    if (isLeftResize && item.trim) {
-      const newStart = snap(Math.max(0, item.trim.start + deltaSec));
-      const shift = newStart - item.trim.start;
-      updateTrackItem(item.id, {
-        trim: { ...item.trim, start: newStart },
-        timelineStart: (item.timelineStart ?? 0) + shift,
+    if (isLeftResize && videoItem.trim) {
+      const newStart = snap(Math.max(0, videoItem.trim.start + deltaSec));
+      const shift = newStart - videoItem.trim.start;
+      updateTrackItem(videoItem.id, {
+        trim: { ...videoItem.trim, start: newStart },
+        timelineStart: (videoItem.timelineStart ?? 0) + shift,
       });
     }
 
-    if (isRightResize && item.trim) {
-      const newEnd = snap(Math.max(item.trim.start + 0.1, item.trim.end + deltaSec));
-      updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
+    if (isRightResize && videoItem.trim) {
+      const newEnd = snap(Math.max(videoItem.trim.start + 0.1, videoItem.trim.end + deltaSec));
+      updateTrackItem(videoItem.id, { trim: { ...videoItem.trim, end: newEnd } });
     }
 
     if (isDragging) {
-      const newPos = snap(Math.max(0, (item.timelineStart ?? 0) + deltaSec));
-      updateTrackItem(item.id, { timelineStart: newPos });
+      const newPos = snap(Math.max(0, (videoItem.timelineStart ?? 0) + deltaSec));
+      updateTrackItem(videoItem.id, { timelineStart: newPos });
     }
   };
 
