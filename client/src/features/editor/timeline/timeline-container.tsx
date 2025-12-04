@@ -3,23 +3,23 @@
 import React from "react";
 
 interface TimelineContainerProps {
-  zoom: number;
+  width: number;
   children: React.ReactNode;
 }
 
 export const TimelineContainer: React.FC<TimelineContainerProps> = ({
-  zoom,
+  width,
   children,
 }) => {
   return (
     <div
-      className="relative h-full flex items-center"
+      className="relative h-full"
       style={{
-        width: `${100 * zoom}%`,
-        transition: "width 0.2s ease",
+        width,
+        minHeight: 80,
+        overflow: "visible",
       }}
     >
-      <div className="absolute inset-0 pointer-events-none" />
       {children}
     </div>
   );

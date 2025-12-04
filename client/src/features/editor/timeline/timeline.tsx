@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { VideoTrackItem } from "@/types";
 import { TimelineBlock } from "./timeline-block";
 import useStore from "../store/use-store";
@@ -12,7 +12,7 @@ const GRID_STEP = 0.5;
 const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState(1);
-  const { trackItemsMap } = useStore();
+  const { trackItemsMap, videoDuration } = useStore();
 
   const videoItems = Object.values(trackItemsMap).filter(
     (item): item is VideoTrackItem => item.type === "video" && !!item.src
@@ -21,8 +21,7 @@ const Timeline: React.FC = () => {
   const maxEndSec = Math.max(...videoItems.map((v) => v.duration ?? 10), 10);
 
   const pixelsPerSecond = 80 * zoom;
-
-  const containerWidth = Math.max(maxEndSec * pixelsPerSecond, 600);
+  const width = Math.max(maxEndSec * pixelsPerSecond, 600);
 
   return (
     <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
@@ -31,8 +30,8 @@ const Timeline: React.FC = () => {
         className="w-full h-full overflow-x-auto relative"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <TimelineContainer zoom={containerWidth / 600}>
-          <TimelineRuler width={containerWidth} pixelsPerSecond={pixelsPerSecond} />
+        <TimelineContainer width={width}>
+          <TimelineRuler width={width} pixelsPerSecond={pixelsPerSecond} />
 
           {videoItems.map((item) => (
             <TimelineBlock

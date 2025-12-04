@@ -1,31 +1,64 @@
 import React from "react";
 
 type Props = {
-  width: number; 
+  width: number;
   pixelsPerSecond: number;
 };
 
 export default function TimelineRuler({ width, pixelsPerSecond }: Props) {
-  const seconds = Math.ceil(width / pixelsPerSecond);
+  const totalSec = width / pixelsPerSecond;
+
+  let step = 1;
+
+  if (totalSec > 30 && totalSec <= 120) step = 5;
+  else if (totalSec > 120 && totalSec <= 600) step = 15;
+  else if (totalSec > 600 && totalSec <= 3600) step = 60;
+  else if (totalSec > 3600) step = 300;
+
   const ticks: number[] = [];
-  const step = 1;
-  for (let s = 0; s <= seconds; s += step) ticks.push(s);
+  for (let t = 0; t <= totalSec; t += step) ticks.push(t);
 
   return (
-    <div className="absolute top-0 left-0 h-6 w-full pointer-events-none">
-      {ticks.map((t) => {
-        const left = t * pixelsPerSecond;
-        return (
-          <div key={t} className="absolute top-0" style={{ left }}>
-            <div style={{ height: 6, borderLeft: "1px solid rgba(255,255,255,0.3)" }} />
+    <div className="relative w-full h-6">
+      <div className="absolute inset-0">
+        {ticks.map((t) => {
+          const left = t * pixelsPerSecond;
+          return (
             <div
-              className="text-white text-[10px] absolute top-6 left-1/2 -translate-x-1/2 select-none"
+              key={t}
+              className="absolute"
+              style={{ left, transform: "translateX(-50%)" }}
             >
-              {t}s
+              <div
+                style={{
+                  height: 8,
+                  borderLeft: "1px solid rgba(255,255,255,0.2)",
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 11,
+                  marginTop: 2,
+                  color: "rgba(255,255,255,0.8)",
+                }}
+              >
+                {formatTime(t)}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
+}
+
+function formatTime(sec: number) {
+  const m = Math.floor(sec / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = Math.floor(sec % 60)
+    .toString()
+    .padStart(2, "0");
+
+  return `${m}:${s}`;
 }

@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { TimelineContainer } from "../timeline/timeline-container";
 import { IntervalLayer } from "../timeline/IntervalLayer";
 
-export interface TimelineProps {
-  stateManager: any;
-}
 
-const Timeline: React.FC<TimelineProps> = ({ stateManager }) => {
+const Timeline: React.FC = () => {
   const [zoom, setZoom] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (delta: number) => {
     setZoom((z) => Math.min(Math.max(z + delta, 0.5), 4));
   };
+
+  const baseWidth = 600;
+  const width = baseWidth * zoom;
 
   return (
     <div
@@ -36,7 +36,7 @@ const Timeline: React.FC<TimelineProps> = ({ stateManager }) => {
         </button>
       </div>
 
-      <TimelineContainer zoom={zoom}>
+      <TimelineContainer width={width}>
         <IntervalLayer />
       </TimelineContainer>
     </div>

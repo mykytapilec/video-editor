@@ -3,7 +3,7 @@ import { VideoTrackItem, TrackItem } from "@/types";
 import useStore from "../store/use-store";
 
 interface Props {
-  item: TrackItem;
+  item: VideoTrackItem;
   pixelsPerSecond: number;
   snapStep: number;
 }
@@ -20,9 +20,6 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
   const [thumbs, setThumbs] = useState<string[]>([]);
   const suspendRef = useRef(false);
   const pendingGenRef = useRef<number | null>(null);
-
-  const isVideo = (i: TrackItem): i is VideoTrackItem => i.type === "video";
-  if (!isVideo(item)) return null;
 
   const trim = item.trim ?? { start: item.start, end: item.end };
   const duration = trim ? trim.end - trim.start : item.duration ?? 0;
@@ -125,7 +122,6 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
   }, [item.src, trim.start, trim.end, duration, generateThumbnailsNow]);
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isVideo(item)) return;
     const deltaSec = e.movementX / pixelsPerSecond;
 
     if (isLeftResize && item.trim) {
