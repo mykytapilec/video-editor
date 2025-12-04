@@ -1,52 +1,42 @@
-// client/src/features/editor/timeline/IntervalLayer.tsx
-import React from "react";
-import useStore from "@/features/editor/store/use-store";
-import { TrackItem } from "@/types";
+"use client";
 
-export const IntervalLayer: React.FC = () => {
-  const trackItemsMap = useStore((s) => s.trackItemsMap);
-  const duration = useStore((s) => s.duration) || 0; // ms
-  const trackItems: TrackItem[] = Object.values(trackItemsMap).filter(
-    (i): i is TrackItem => i !== undefined && i !== null
-  );
+import React, { JSX } from "react";
 
-  if (duration <= 0) {
-    return (
-      <div className="relative h-full w-full flex items-center justify-center text-xs text-muted-foreground">
-        Видео не загружено — нет длительности (нет интервалов)
+interface IntervalLayerProps {
+  zoom: number;
+}
+
+export const IntervalLayer: React.FC<IntervalLayerProps> = ({ zoom }) => {
+  const pixelsPerSecond = 100 * zoom;
+
+  const totalWidth = 20000;
+
+  const totalSeconds = totalWidth / pixelsPerSecond;
+
+  let step = 1;
+  if (zoom < 0.7) step = 5;
+  else if (zoom < 1.0) step = 2;
+  else if (zoom < 2.0) step = 1;
+  else step = 0.5;
+
+  const marks: JSX.Element[] = [];
+
+  for (let t = 0; t < totalSeconds; t += step) {
+    const left = t * pixelsPerSecond;
+
+    marks.push(
+      <div
+        key={t}
+        className="absolute flex flex-col items-center"
+        style={{ left }}
+      >
+        <div className="w-px h-6 bg-neutral-700" />
+        <div className="text-xs text-neutral-500 mt-1 select-none">
+          {t.toFixed(step >= 1 ? 0 : 1)}s
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="relative h-full w-full">
-      {trackItems.map((item) => {
-        const itemStartMs = Math.round((item.start ?? 0) * 1000);
-        const itemEndMs = Math.round((item.end ?? 0) * 1000);
-        const leftPercent = Math.max(0, (itemStartMs / duration) * 100);
-        const widthPercent = Math.max(
-          0,
-          ((itemEndMs - itemStartMs) / duration) * 100
-        );
-
-        return (
-          <div
-            key={item.id}
-            className="absolute bg-blue-500/60 hover:bg-blue-400 text-xs text-white flex items-center justify-center rounded-md"
-            style={{
-              left: `${leftPercent}%`,
-              width: `${widthPercent}%`,
-              height: "60%",
-              top: "20%",
-            }}
-            title={item.name || String(item.id)}
-          >
-            {item.name}
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <div className="relative h-full">{marks}</div>;
 };
-
-export default IntervalLayer;
