@@ -36,7 +36,7 @@ const Timeline: React.FC = () => {
         </button>
       </div>
 
-      <TimelineContainer width={width}>
+      <TimelineContainer>
         <IntervalLayer />
       </TimelineContainer>
     </div>

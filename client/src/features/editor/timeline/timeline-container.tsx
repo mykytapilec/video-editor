@@ -3,7 +3,7 @@
 import React from "react";
 
 interface TimelineContainerProps {
-  width: number;
+  width?: number;
   children: React.ReactNode;
 }
 
@@ -15,7 +15,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     <div
       className="relative h-full"
       style={{
-        width,
+        width: typeof width === "number" ? `${width}px` : width,
         minHeight: 80,
         overflow: "visible",
       }}

@@ -124,6 +124,10 @@ export interface ITimelineStore {
 
   videoDuration: number;
   setVideoDuration: (d: number) => void;
+  zoom: number;
+  setZoom: (z: number) => void;
+  containerWidth: number;
+  setContainerWidth: (w: number) => void;
 }
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";

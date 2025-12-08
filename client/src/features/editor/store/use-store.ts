@@ -39,6 +39,12 @@ export default create<ITimelineStore>((set, get) => ({
   trackItemsMap: {},
   trackItemIds: [],
 
+  zoom: 1,
+  setZoom: (z) => set({ zoom: z }),
+  
+  containerWidth: 1080,
+  setContainerWidth: (w) => set({ containerWidth: w }),
+
   activeIds: [],
   setActiveIds: (ids) => {
     set({ activeIds: ids });

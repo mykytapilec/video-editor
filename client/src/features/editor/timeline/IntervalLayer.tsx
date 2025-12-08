@@ -5,7 +5,7 @@ import { TrackItem } from "@/types";
 
 export const IntervalLayer: React.FC = () => {
   const trackItemsMap = useStore((s) => s.trackItemsMap);
-  const duration = useStore((s) => s.duration) || 0; // ms
+  const duration = useStore((s) => s.videoDuration) || 0;
   const trackItems: TrackItem[] = Object.values(trackItemsMap).filter(
     (i): i is TrackItem => i !== undefined && i !== null
   );
@@ -21,13 +21,10 @@ export const IntervalLayer: React.FC = () => {
   return (
     <div className="relative h-full w-full">
       {trackItems.map((item) => {
-        const itemStartMs = Math.round((item.start ?? 0) * 1000);
-        const itemEndMs = Math.round((item.end ?? 0) * 1000);
-        const leftPercent = Math.max(0, (itemStartMs / duration) * 100);
-        const widthPercent = Math.max(
-          0,
-          ((itemEndMs - itemStartMs) / duration) * 100
-        );
+        const itemStart = Math.max(0, item.start ?? 0);
+        const itemEnd = Math.max(itemStart + 0.01, item.end ?? itemStart + 0.01);
+        const leftPercent = Math.max(0, (itemStart / duration) * 100);
+        const widthPercent = Math.max(0.1, ((itemEnd - itemStart) / duration) * 100);
 
         return (
           <div
@@ -41,7 +38,7 @@ export const IntervalLayer: React.FC = () => {
             }}
             title={item.name || String(item.id)}
           >
-            {item.name}
+            <div className="truncate px-2">{item.name ?? ""}</div>
           </div>
         );
       })}
