@@ -21,27 +21,43 @@ const NativePlayer: React.FC<NativePlayerProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
 
   const setVideoDuration = useStore((s) => s.setVideoDuration);
+  const setPlayerRef = useStore((s) => s.setPlayerRef);
+
+  useEffect(() => {
+    // register videoRef in store so Timeline (and others) can control it
+    setPlayerRef(videoRef);
+    return () => {
+      // cleanup
+      setPlayerRef(null);
+    };
+  }, [setPlayerRef]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleLoaded = () => {
-      setVideoDuration(video.duration);
-
+      // store duration (seconds)
+      setVideoDuration(video.duration || 0);
       setIsLoaded(true);
-      video.currentTime = currentTime;
+      // keep player roughly at currentTime
+      try {
+        video.currentTime = currentTime;
+      } catch {}
       video.play().catch(() => {});
     };
 
     video.addEventListener("loadedmetadata", handleLoaded);
     return () => video.removeEventListener("loadedmetadata", handleLoaded);
-  }, [src]);
+    // note: we intentionally do NOT include currentTime in deps to avoid re-attaching
+  }, [src, setVideoDuration]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (video && isLoaded && Math.abs(video.currentTime - currentTime) > 0.1) {
-      video.currentTime = currentTime;
+      try {
+        video.currentTime = currentTime;
+      } catch {}
     }
   }, [currentTime, isLoaded]);
 
