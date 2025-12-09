@@ -46,6 +46,7 @@ export interface VideoTrackItem extends TrackItemBase {
   trim?: { start: number; end: number };
   playbackRate?: number;
   details?: ExtendedVideoDetails;
+  thumbnail?: string;
 }
 
 export interface ImageTrackItem extends TrackItemBase {
