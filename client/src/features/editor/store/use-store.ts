@@ -48,7 +48,6 @@ export default create<ITimelineStore>((set, get) => ({
   activeIds: [],
   setActiveIds: (ids) => {
     set({ activeIds: ids });
-
     if (ids.length === 1) {
       const id = ids[0];
       const item = get().trackItemsMap[id];
@@ -70,8 +69,10 @@ export default create<ITimelineStore>((set, get) => ({
 
   addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();
-    const trim = (opts as Partial<VideoTrackItem>).trim ?? { start: 0, end: 5 };
-    const duration = trim.end - trim.start;
+    const vidDuration = get().videoDuration || 1;
+
+    const trim = (opts as Partial<VideoTrackItem>).trim ?? { start: 0, end: vidDuration };
+    const duration = Math.max(1, trim.end - trim.start);
 
     const item: VideoTrackItem = {
       id,
@@ -80,9 +81,9 @@ export default create<ITimelineStore>((set, get) => ({
       src,
       timelineStart: (opts as Partial<VideoTrackItem>).timelineStart ?? 0,
       start: trim.start,
-      end: trim.end,
+      end: trim.start + duration,
       duration,
-      trim,
+      trim: { start: trim.start, end: trim.start + duration },
       playbackRate: (opts as Partial<VideoTrackItem>).playbackRate ?? 1,
       details: {
         ...defaultVideoDetails,
@@ -105,13 +106,35 @@ export default create<ITimelineStore>((set, get) => ({
     const item = get().trackItemsMap[id];
     if (!item) return;
 
+    const videoDuration = get().videoDuration || 1;
+
     if (item.type === "video") {
       const currentTrim = item.trim ?? { start: item.start, end: item.end };
-      const nextTrim = "trim" in patch && (patch as Partial<VideoTrackItem>).trim ? (patch as Partial<VideoTrackItem>).trim! : currentTrim;
+      let nextTrim =
+        "trim" in patch && (patch as Partial<VideoTrackItem>).trim
+          ? (patch as Partial<VideoTrackItem>).trim!
+          : currentTrim;
+
+      const minLength = 1;
+      const maxLength = videoDuration;
+
+      if (nextTrim.start < 0) nextTrim.start = 0;
+      if (nextTrim.start > videoDuration - minLength) nextTrim.start = videoDuration - minLength;
+
+      if (nextTrim.end > videoDuration) nextTrim.end = videoDuration;
+      if (nextTrim.end < nextTrim.start + minLength) nextTrim.end = nextTrim.start + minLength;
 
       const start = nextTrim.start;
       const end = nextTrim.end;
       const duration = end - start;
+
+      let timelineStart = item.timelineStart ?? 0;
+      if ("timelineStart" in patch) {
+        timelineStart = Math.min(
+          Math.max(0, (patch as Partial<VideoTrackItem>).timelineStart ?? timelineStart),
+          videoDuration - duration
+        );
+      }
 
       const updated: VideoTrackItem = {
         ...item,
@@ -120,6 +143,7 @@ export default create<ITimelineStore>((set, get) => ({
         end,
         duration,
         trim: nextTrim,
+        timelineStart,
         details: {
           ...(item.details ?? defaultVideoDetails),
           ...("details" in patch && (patch as any).details ? (patch as any).details : {}),

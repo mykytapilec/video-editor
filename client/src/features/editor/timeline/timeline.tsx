@@ -12,7 +12,7 @@ const GRID_STEP = 0.5;
 const Timeline: React.FC = () => {
   const outerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(800);
-  const [zoom, setZoom] = useState<number>(1); // zoom 1 = fit entire video to containerWidth
+  const [zoom, setZoom] = useState<number>(1);
   const { trackItemsMap, videoDuration } = useStore();
 
   useEffect(() => {
@@ -25,7 +25,17 @@ const Timeline: React.FC = () => {
     return () => ro.disconnect();
   }, []);
 
-  const dur = Math.max(1, videoDuration || 10);
+  if (!videoDuration || videoDuration <= 0) {
+    return (
+      <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
+        <div className="flex w-full h-full items-center justify-center text-gray-400">
+          Timeline loading...
+        </div>
+      </div>
+    );
+  }
+
+  const dur = Math.max(1, videoDuration);
   const pixelsPerSecond = (containerWidth * zoom) / dur;
   const timelineWidth = Math.max(containerWidth * zoom, 600);
 
@@ -39,16 +49,26 @@ const Timeline: React.FC = () => {
 
   return (
     <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
-      <div ref={outerRef} className="w-full h-full overflow-x-auto relative" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div
+        ref={outerRef}
+        className="w-full h-full overflow-x-auto relative"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         <TimelineContainer width={timelineWidth}>
           <TimelineRuler
             width={timelineWidth}
             pixelsPerSecond={pixelsPerSecond}
             totalSeconds={dur}
           />
+
           {videoItems.map((item) => {
-            const itemDuration = item.duration && item.duration > 0 ? item.duration : dur;
-            const itemCopy: VideoTrackItem = { ...item, duration: itemDuration, trim: item.trim ?? { start: item.start, end: item.start + itemDuration } };
+            const itemCopy: VideoTrackItem = {
+              ...item,
+              duration: item.duration && item.duration > 0.1 ? item.duration : videoDuration,
+              trim: item.trim ?? { start: 0, end: videoDuration },
+              timelineStart: item.timelineStart ?? 0,
+            };
+
             return (
               <TimelineBlock
                 key={item.id}
@@ -64,7 +84,9 @@ const Timeline: React.FC = () => {
       <div className="absolute top-2 right-2 flex gap-2">
         <button
           onClick={() => setZoom((z) => Math.max(minZoom, +(z - zoomStep).toFixed(2)))}
-          className={`px-2 py-1 rounded-md ${zoom <= minZoom ? "bg-gray-600 text-gray-300 cursor-not-allowed" : "bg-gray-700 text-white hover:bg-gray-600"}`}
+          className={`px-2 py-1 rounded-md ${
+            zoom <= minZoom ? "bg-gray-600 text-gray-300 cursor-not-allowed" : "bg-gray-700 text-white hover:bg-gray-600"
+          }`}
           disabled={zoom <= minZoom}
         >
           -
