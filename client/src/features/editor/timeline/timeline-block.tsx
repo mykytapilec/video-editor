@@ -1,7 +1,10 @@
-// /client/src/features/editor/timeline/timeline-block.tsx
-import React, { useRef, useState, useEffect } from "react";
+// client/src/features/editor/timeline/timeline-block.tsx
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { VideoTrackItem } from "@/types";
 import useStore from "../store/use-store";
+import useThumbnails from "@/features/editor/hooks/use-thumbnails";
 
 interface Props {
   item: VideoTrackItem;
@@ -19,93 +22,123 @@ const formatTime = (sec: number) => {
 
 export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
   const { updateTrackItem } = useStore();
-  const blockRef = useRef<HTMLDivElement | null>(null);
+  const videoDuration = useStore((s) => s.videoDuration) || 1;
 
   const [isDragging, setIsDragging] = useState(false);
   const [isLeftResize, setIsLeftResize] = useState(false);
   const [isRightResize, setIsRightResize] = useState(false);
 
-  const videoDuration = useStore.getState().videoDuration || 1;
-
-  const snap = (val: number) => Math.round(val / snapStep) * snapStep;
-
-  const handleMouseMove = (e: MouseEvent) => {
-    const deltaSec = e.movementX / pixelsPerSecond;
-
-    let { start, end } = item.trim ?? { start: item.start ?? 0, end: item.end ?? videoDuration };
-    let timelineStart = item.timelineStart ?? 0;
-
-    const minLength = 1;
-    // LEFT RESIZE
-    if (isLeftResize) {
-      let newStart = snap(start + deltaSec);
-      if (newStart < 0) newStart = 0;
-      if (newStart > end - minLength) newStart = end - minLength;
-
-      timelineStart = Math.min(timelineStart + (newStart - start), videoDuration - (end - newStart));
-
-      updateTrackItem(item.id, { trim: { ...item.trim, start: newStart }, timelineStart });
-    }
-
-    // RIGHT RESIZE
-    if (isRightResize) {
-      let newEnd = snap(end + deltaSec);
-      if (newEnd > videoDuration) newEnd = videoDuration;
-      if (newEnd < start + minLength) newEnd = start + minLength;
-
-      updateTrackItem(item.id, { trim: { ...item.trim, end: newEnd } });
-    }
-
-    // DRAG
-    if (isDragging) {
-      let newTimelineStart = snap(timelineStart + deltaSec);
-      if (newTimelineStart < 0) newTimelineStart = 0;
-      if (newTimelineStart + (end - start) > videoDuration) {
-        newTimelineStart = videoDuration - (end - start);
-      }
-      updateTrackItem(item.id, { timelineStart: newTimelineStart });
-    }
-  };
-
-  const stopActions = () => {
-    setIsDragging(false);
-    setIsLeftResize(false);
-    setIsRightResize(false);
-  };
-
-  useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", stopActions);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", stopActions);
-    };
-  }, [isDragging, isLeftResize, isRightResize, item]);
-
-  const onStartDrag = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).dataset.handle) return;
-    setIsDragging(true);
-  };
-
   const trim = item.trim ?? { start: item.start ?? 0, end: item.end ?? videoDuration };
   const duration = Math.max(1, trim.end - trim.start);
-  const width = duration * pixelsPerSecond;
+  const width = Math.max(1, duration * pixelsPerSecond);
   const left = (item.timelineStart ?? 0) * pixelsPerSecond;
+
+  const snap = (v: number) => Math.round(v / snapStep) * snapStep;
+
+  const thumbsCount = Math.min(8, Math.max(1, Math.floor(width / 160)));
+
+  const times = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < thumbsCount; i++) {
+      const t = trim.start + (i / Math.max(1, thumbsCount - 1)) * (trim.end - trim.start);
+      arr.push(Number.isFinite(t) ? t : trim.start);
+    }
+    return arr;
+  }, [thumbsCount, trim.start, trim.end]);
+
+  const { thumbs, loading } = useThumbnails(item.id, item.src || null, times, {
+    width: 240,
+    height: 140,
+    crossOrigin: "anonymous",
+  });
+
+  useEffect(() => {
+    const videoDur = Math.max(1, videoDuration);
+    const minLen = 1;
+
+    const onMove = (e: MouseEvent) => {
+      const deltaSec = e.movementX / pixelsPerSecond;
+
+      const curTrim = item.trim ?? { start: item.start ?? 0, end: item.end ?? (item.start ?? 0) + duration };
+      let { start, end } = curTrim;
+      let timelineStart = item.timelineStart ?? 0;
+
+      if (isLeftResize) {
+        let newStart = snap(start + deltaSec);
+        if (newStart < 0) newStart = 0;
+        if (newStart > end - minLen) newStart = end - minLen;
+        timelineStart = Math.min(Math.max(0, timelineStart + (newStart - start)), videoDur - (end - newStart));
+        updateTrackItem(item.id, { trim: { ...curTrim, start: newStart }, timelineStart });
+        return;
+      }
+
+      if (isRightResize) {
+        let newEnd = snap(end + deltaSec);
+        if (newEnd > videoDur) newEnd = videoDur;
+        if (newEnd < start + minLen) newEnd = start + minLen;
+        updateTrackItem(item.id, { trim: { ...curTrim, end: newEnd } });
+        return;
+      }
+
+      if (isDragging) {
+        let newTimelineStart = snap(timelineStart + deltaSec);
+        if (newTimelineStart < 0) newTimelineStart = 0;
+        if (newTimelineStart + (end - start) > videoDur) {
+          newTimelineStart = videoDur - (end - start);
+        }
+        updateTrackItem(item.id, { timelineStart: newTimelineStart });
+      }
+    };
+
+    const onUp = () => {
+      setIsDragging(false);
+      setIsLeftResize(false);
+      setIsRightResize(false);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging, isLeftResize, isRightResize, item, pixelsPerSecond, videoDuration]);
 
   return (
     <div
-      ref={blockRef}
       className="absolute bg-gray-800 rounded-sm overflow-hidden select-none"
       style={{ left, width, height: 100, cursor: isDragging ? "grabbing" : "grab" }}
-      onMouseDown={onStartDrag}
+      onMouseDown={(e) => {
+        if ((e.target as HTMLElement).dataset.handle) return;
+        setIsDragging(true);
+      }}
     >
-      <div className="w-full h-full overflow-hidden opacity-80">
-        {item.thumbnail && (
-          <img
-            src={item.thumbnail}
-            className="w-full h-full object-cover pointer-events-none select-none"
-            draggable={false}
-          />
+      <div className="w-full h-full overflow-hidden opacity-90 flex">
+        {thumbs && thumbs.length > 0 ? (
+          thumbs.map((src, i) =>
+            src ? (
+              <img
+                key={i}
+                src={src}
+                className="object-cover border-r border-gray-700"
+                style={{ width: `${100 / thumbs.length}%`, height: "100%" }}
+                alt={`thumb-${i}`}
+                draggable={false}
+              />
+            ) : (
+              <div
+                key={i}
+                className="flex-1 flex items-center justify-center text-gray-400 text-[12px] border-r border-gray-700"
+              >
+                —
+              </div>
+            )
+          )
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">
+            {loading ? "Loading..." : "No preview"}
+          </div>
         )}
       </div>
 
@@ -135,3 +168,5 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
     </div>
   );
 };
+
+export default TimelineBlock;
