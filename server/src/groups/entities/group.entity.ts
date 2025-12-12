@@ -8,11 +8,11 @@ export class Group {
   @Column()
   idx!: number;
 
-  @Column()
-  start!: string;
+  @Column('float')
+  start!: number;
 
-  @Column({ name: 'end' })
-  end!: string;
+  @Column('float')
+  end!: number;
 
   @Column('text')
   text!: string;

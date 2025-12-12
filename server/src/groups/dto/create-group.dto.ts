@@ -4,11 +4,11 @@ export class CreateGroupDto {
   @IsNumber()
   idx!: number;
 
-  @IsString()
-  start!: string;
+  @IsNumber()
+  start!: number;
 
-  @IsString()
-  end!: string;
+  @IsNumber()
+  end!: number;
 
   @IsString()
   text!: string;
