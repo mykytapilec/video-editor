@@ -6,6 +6,7 @@ import { TimelineBlock } from "./timeline-block";
 import useStore from "../store/use-store";
 import { TimelineContainer } from "./timeline-container";
 import TimelineRuler from "./timeline-ruler";
+import { useEditorStore } from "../store/use-editor-store";
 
 const GRID_STEP = 0.5;
 
@@ -14,6 +15,10 @@ const Timeline: React.FC = () => {
   const [containerWidth, setContainerWidth] = useState<number>(800);
   const [zoom, setZoom] = useState<number>(1);
   const { trackItemsMap, videoDuration } = useStore();
+
+  const groups = useEditorStore((s) => s.groups);
+  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
 
   useEffect(() => {
     const el = outerRef.current;
@@ -78,6 +83,15 @@ const Timeline: React.FC = () => {
               />
             );
           })}
+          {selectedGroup && (
+            <div
+              className="absolute top-0 h-full bg-yellow-400/30 pointer-events-none"
+              style={{
+                left: `${(selectedGroup.start / dur) * timelineWidth}px`,
+                width: `${((selectedGroup.end - selectedGroup.start) / dur) * timelineWidth}px`,
+              }}
+            />
+          )}
         </TimelineContainer>
       </div>
 
