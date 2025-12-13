@@ -58,7 +58,6 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
             const videoUrl = normalizeVideoUrl(uploadedItem.url);
             const id = useStore.getState().addVideoTrackItem(videoUrl, {
               name: uploadedItem.name,
-              trim: { start: 0, end: 5 },
             });
             useStore.getState().setActiveIds([id]);
           }

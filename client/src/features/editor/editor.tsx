@@ -36,6 +36,8 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
 
+  console.log("🎬 create TrackItem", trackItem);
+
   const {
     setTrackItem: setLayoutTrackItem,
     setFloatingControl,
