@@ -1,56 +1,58 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { VideoTrackItem } from "@/types";
-import { TimelineBlock } from "./timeline-block";
+import React, { useEffect, useRef, useState } from "react";
 import useStore from "../store/use-store";
+import { VideoTrackItem } from "@/types";
+
 import { TimelineContainer } from "./timeline-container";
 import TimelineRuler from "./timeline-ruler";
-import { useEditorStore } from "../store/use-editor-store";
+import TimelineBlock from "./timeline-block";
 
 const GRID_STEP = 0.5;
 
 const Timeline: React.FC = () => {
   const outerRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(800);
-  const [zoom, setZoom] = useState<number>(1);
-  const { trackItemsMap, videoDuration } = useStore();
 
-  const groups = useEditorStore((s) => s.groups);
-  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
+  const trackItemsMap = useStore((s) => s.trackItemsMap);
+  const videoDuration = useStore((s) => s.videoDuration);
+  const zoom = useStore((s) => s.zoom);
+  const setContainerWidth = useStore((s) => s.setContainerWidth);
+
+  const [containerWidth, setLocalContainerWidth] = useState(800);
 
   useEffect(() => {
     const el = outerRef.current;
     if (!el) return;
-    const update = () => setContainerWidth(el.clientWidth || 800);
+
+    const update = () => {
+      const w = el.clientWidth || 800;
+      setLocalContainerWidth(w);
+      setContainerWidth(w);
+    };
+
     update();
+
     const ro = new ResizeObserver(update);
     ro.observe(el);
+
     return () => ro.disconnect();
-  }, []);
+  }, [setContainerWidth]);
 
   if (!videoDuration || videoDuration <= 0) {
     return (
-      <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
-        <div className="flex w-full h-full items-center justify-center text-gray-400">
-          Timeline loading...
-        </div>
+      <div className="w-full h-[240px] bg-gray-900 rounded-lg flex items-center justify-center text-gray-400">
+        Video not loaded — no duration
       </div>
     );
   }
 
-  const dur = Math.max(1, videoDuration);
-  const pixelsPerSecond = (containerWidth * zoom) / dur;
-  const timelineWidth = Math.max(containerWidth * zoom, 600);
+  const duration = Math.max(1, videoDuration);
+  const pixelsPerSecond = (containerWidth * zoom) / duration;
+  const timelineWidth = Math.max(containerWidth * zoom, containerWidth);
 
-  const videoItems = Object.values(trackItemsMap).filter(
-    (it): it is VideoTrackItem => it.type === "video" && !!it.src
+  const videoItems: VideoTrackItem[] = Object.values(trackItemsMap).filter(
+    (i): i is VideoTrackItem => i?.type === "video" && !!i.src
   );
-
-  const minZoom = 1;
-  const maxZoom = 8;
-  const zoomStep = 0.5;
 
   return (
     <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
@@ -63,54 +65,26 @@ const Timeline: React.FC = () => {
           <TimelineRuler
             width={timelineWidth}
             pixelsPerSecond={pixelsPerSecond}
-            totalSeconds={dur}
+            totalSeconds={duration}
           />
-
           {videoItems.map((item) => {
-            const itemCopy: VideoTrackItem = {
+            const safeItem: VideoTrackItem = {
               ...item,
-              duration: item.duration && item.duration > 0.1 ? item.duration : videoDuration,
-              trim: item.trim ?? { start: 0, end: videoDuration },
               timelineStart: item.timelineStart ?? 0,
+              trim: item.trim ?? { start: 0, end: duration },
+              duration: item.duration && item.duration > 0 ? item.duration : duration,
             };
 
             return (
               <TimelineBlock
                 key={item.id}
-                item={itemCopy}
+                item={safeItem}
                 pixelsPerSecond={pixelsPerSecond}
                 snapStep={GRID_STEP}
               />
             );
           })}
-          {selectedGroup && (
-            <div
-              className="absolute top-0 h-full bg-yellow-400/30 pointer-events-none"
-              style={{
-                left: `${(selectedGroup.start / dur) * timelineWidth}px`,
-                width: `${((selectedGroup.end - selectedGroup.start) / dur) * timelineWidth}px`,
-              }}
-            />
-          )}
         </TimelineContainer>
-      </div>
-
-      <div className="absolute top-2 right-2 flex gap-2">
-        <button
-          onClick={() => setZoom((z) => Math.max(minZoom, +(z - zoomStep).toFixed(2)))}
-          className={`px-2 py-1 rounded-md ${
-            zoom <= minZoom ? "bg-gray-600 text-gray-300 cursor-not-allowed" : "bg-gray-700 text-white hover:bg-gray-600"
-          }`}
-          disabled={zoom <= minZoom}
-        >
-          -
-        </button>
-        <button
-          onClick={() => setZoom((z) => Math.min(maxZoom, +(z + zoomStep).toFixed(2)))}
-          className="px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600"
-        >
-          +
-        </button>
       </div>
     </div>
   );

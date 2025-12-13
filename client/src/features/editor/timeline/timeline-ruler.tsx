@@ -24,7 +24,7 @@ export default function TimelineRuler({ width, pixelsPerSecond, totalSeconds }: 
 
   return (
     <div className="relative w-full h-6 pointer-events-none">
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         {ticks.map((t, idx) => {
           const left = t * pixelsPerSecond;
           return (

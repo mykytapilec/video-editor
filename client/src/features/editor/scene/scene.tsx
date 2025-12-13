@@ -12,7 +12,7 @@ const Scene = forwardRef<SceneRef>((_, ref) => {
   const setCurrentTime = useStore((s) => s.setCurrentTime);
 
   useImperativeHandle(ref, () => ({
-    recalculateZoom: () => {}
+    recalculateZoom: () => {},
   }));
 
   return (

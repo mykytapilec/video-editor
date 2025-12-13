@@ -36,7 +36,6 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
 
       const data = await res.json();
 
-      // Ensure ids are numbers (API returns number, but normalize just in case)
       const normalized = (data || []).map((g: any) => ({
         ...g,
         id: typeof g.id === "string" ? Number(g.id) : g.id,
@@ -49,5 +48,6 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
       console.error("Groups fetch error:", e);
     }
   },
+
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 }));

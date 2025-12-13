@@ -1,93 +1,97 @@
-// client/src/features/editor/components/NativePlayer.tsx
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
+import { useEditorStore } from "../store/use-editor-store";
 import useStore from "../store/use-store";
 
-interface NativePlayerProps {
-  src: string | null;
-  currentTime: number;
-  onTimeUpdate: (t: number) => void;
-  playbackRate?: number;
+export interface NativePlayerProps {
+  src: string;
+  currentTime?: number;
+  onTimeUpdate?: (time: number) => void;
 }
 
-const NativePlayer: React.FC<NativePlayerProps> = ({
+export default function NativePlayer({
   src,
   currentTime,
   onTimeUpdate,
-  playbackRate = 1,
-}) => {
+}: NativePlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
 
+  // groups / selection — editor store
+  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
+  const groups = useEditorStore((s) => s.groups);
+
+  // timeline store
   const setVideoDuration = useStore((s) => s.setVideoDuration);
-  const setPlayerRef = useStore((s) => s.setPlayerRef);
 
   useEffect(() => {
-    // register videoRef in store so Timeline (and others) can control it
-    setPlayerRef(videoRef);
-    return () => {
-      // cleanup
-      setPlayerRef(null);
-    };
-  }, [setPlayerRef]);
+    const unsub = useStore.subscribe((state) => {
+      console.log("🎥 videoDuration =", state.videoDuration);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const el = videoRef.current;
+    if (!el) return;
 
-    const handleLoaded = () => {
-      // store duration (seconds)
-      setVideoDuration(video.duration || 0);
-      setIsLoaded(true);
-      // keep player roughly at currentTime
-      try {
-        video.currentTime = currentTime;
-      } catch {}
-      video.play().catch(() => {});
+    const handleLoadedMetadata = () => {
+      if (Number.isFinite(el.duration)) {
+        console.log("✅ loadedmetadata, duration =", el.duration);
+        setVideoDuration(el.duration);
+      }
     };
 
-    video.addEventListener("loadedmetadata", handleLoaded);
-    return () => video.removeEventListener("loadedmetadata", handleLoaded);
-    // note: we intentionally do NOT include currentTime in deps to avoid re-attaching
-  }, [src, setVideoDuration]);
+    el.addEventListener("loadedmetadata", handleLoadedMetadata);
+    return () => el.removeEventListener("loadedmetadata", handleLoadedMetadata);
+  }, [setVideoDuration]);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (video && isLoaded && Math.abs(video.currentTime - currentTime) > 0.1) {
-      try {
-        video.currentTime = currentTime;
-      } catch {}
+    const el = videoRef.current;
+    if (!el) return;
+    if (currentTime === undefined) return;
+
+    if (Math.abs(el.currentTime - currentTime) > 0.05) {
+      el.currentTime = currentTime;
     }
-  }, [currentTime, isLoaded]);
+  }, [currentTime]);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (video) video.playbackRate = playbackRate;
-  }, [playbackRate]);
+    const el = videoRef.current;
+    if (!el) return;
 
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (video) onTimeUpdate(video.currentTime);
-  };
+    const handleUpdate = () => {
+      const group = groups.find((g) => g.id === selectedGroupId);
 
-  if (!src) {
-    return (
-      <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white">
-        No video source provided.
-      </div>
-    );
-  }
+      if (group && el.currentTime >= group.end) {
+        el.pause();
+      }
+
+      onTimeUpdate?.(el.currentTime);
+    };
+
+    el.addEventListener("timeupdate", handleUpdate);
+    return () => el.removeEventListener("timeupdate", handleUpdate);
+  }, [selectedGroupId, groups, onTimeUpdate]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const group = groups.find((g) => g.id === selectedGroupId);
+    if (!group) return;
+
+    el.currentTime = group.start;
+    el.play();
+  }, [selectedGroupId, groups]);
 
   return (
     <video
       ref={videoRef}
       src={src}
+      className="max-h-full max-w-full"
       controls
-      className="w-full h-full object-contain"
-      onTimeUpdate={handleTimeUpdate}
+      playsInline
     />
   );
-};
-
-export default NativePlayer;
+}

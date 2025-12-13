@@ -82,7 +82,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
       <Navbar
         projectName={projectName}
         user={null}
-        stateManager={stateManager as any}
+        stateManager={stateManager}
         setProjectName={setProjectName}
       />
 
