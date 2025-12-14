@@ -52,12 +52,12 @@ export default function Timeline() {
   );
 
   return (
-    <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden">
+    <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden flex flex-col">
       {/* thumbnails generator */}
       <VideoThumbnailExtractor />
 
       {/* toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-700 text-white">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-700 text-white shrink-0">
         <div className="text-sm font-medium">Timeline</div>
 
         <div className="flex items-center gap-2">
@@ -85,11 +85,14 @@ export default function Timeline() {
         </div>
       </div>
 
-      {/* content */}
-      <div ref={outerRef} className="relative flex-1 overflow-x-auto">
+      {/* timeline content */}
+      <div
+        ref={outerRef}
+        className="relative flex-1 overflow-x-auto overflow-y-hidden"
+      >
         <div
           className="relative h-full"
-          style={{ width: containerWidth * zoom }}
+          style={{ width: containerWidth * zoom, minHeight: 120 }}
         >
           {items.map((item) => (
             <TimelineBlock key={item.id} item={item} />
