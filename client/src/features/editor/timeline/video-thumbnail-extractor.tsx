@@ -2,30 +2,23 @@
 
 import { useEffect } from "react";
 import useStore from "@/features/editor/store/use-store";
-import { TrackItem, VideoTrackItem, VideoThumbnail } from "@/types";
+import { VideoTrackItem } from "@/types";
 
 const PREVIEW_WIDTH = 120;
-
-function isVideoItem(item: TrackItem): item is VideoTrackItem {
-  return item.type === "video" && typeof item.src === "string";
-}
 
 export default function VideoThumbnailExtractor() {
   const { trackItemsMap, updateTrackItem } = useStore();
 
   useEffect(() => {
     const videoItem = Object.values(trackItemsMap).find(
-      (item): item is VideoTrackItem =>
-        isVideoItem(item) &&
-        (!Array.isArray(item.thumbnails) || item.thumbnails.length === 0)
+      (i): i is VideoTrackItem =>
+        i.type === "video" &&
+        typeof i.src === "string" &&
+        (!i.thumbnails || i.thumbnails.length === 0) &&
+        !!i.trim
     );
 
-    if (!videoItem) return;
-
-    const trim = videoItem.trim ?? {
-      start: 0,
-      end: Math.max(1, videoItem.duration ?? 1),
-    };
+    if (!videoItem || !videoItem.trim) return;
 
     const video = document.createElement("video");
     video.src = videoItem.src!;
@@ -34,23 +27,21 @@ export default function VideoThumbnailExtractor() {
     video.preload = "metadata";
 
     video.onloadedmetadata = () => {
-      const duration = trim.end - trim.start;
+      const { start, end } = videoItem.trim!;
+      const duration = end - start;
+
+      if (duration <= 0) return;
 
       const count = Math.max(1, Math.floor(duration / 5));
       const step = duration / count;
-      const times = Array.from(
-        { length: count },
-        (_, i) => trim.start + i * step
-      );
+      const times = Array.from({ length: count }, (_, i) => start + i * step);
 
       const canvas = document.createElement("canvas");
       canvas.width = PREVIEW_WIDTH;
       canvas.height = Math.floor((PREVIEW_WIDTH * 9) / 16);
+      const ctx = canvas.getContext("2d")!;
 
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const thumbnails: VideoThumbnail[] = [];
+      const thumbnails: { time: number; src: string }[] = [];
       let index = 0;
 
       const next = () => {

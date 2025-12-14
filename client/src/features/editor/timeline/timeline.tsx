@@ -25,8 +25,8 @@ export default function Timeline() {
       setLocalContainerWidth(w);
       setContainerWidth(w);
     };
-    update();
 
+    update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
@@ -36,23 +36,36 @@ export default function Timeline() {
     () =>
       trackItemIds
         .map((id) => trackItemsMap[id])
-        .filter((i) => i && i.type === "video"),
+        .filter(
+          (i): i is any =>
+            !!i && i.type === "video" && (i.duration ?? 0) > 0
+        ),
     [trackItemIds, trackItemsMap]
+  );
+
+  console.log(
+    "🕒 Timeline render",
+    "videoDuration =",
+    videoDuration,
+    "items =",
+    items
   );
 
   return (
     <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden">
-      {/* THUMBNAILS GENERATOR */}
+      {/* thumbnails generator */}
       <VideoThumbnailExtractor />
 
-      {/* TOOLBAR */}
+      {/* toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-700 text-white">
         <div className="text-sm font-medium">Timeline</div>
 
         <div className="flex items-center gap-2">
           <button
             className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
-            onClick={() => useStore.getState().setZoom(Math.max(0.25, zoom - 0.25))}
+            onClick={() =>
+              useStore.getState().setZoom(Math.max(0.25, zoom - 0.25))
+            }
           >
             −
           </button>
@@ -63,14 +76,16 @@ export default function Timeline() {
 
           <button
             className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
-            onClick={() => useStore.getState().setZoom(Math.min(4, zoom + 0.25))}
+            onClick={() =>
+              useStore.getState().setZoom(Math.min(4, zoom + 0.25))
+            }
           >
             +
           </button>
         </div>
       </div>
 
-      {/* CONTENT */}
+      {/* content */}
       <div ref={outerRef} className="relative flex-1 overflow-x-auto">
         <div
           className="relative h-full"
