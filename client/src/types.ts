@@ -40,13 +40,18 @@ export interface ExtendedVideoDetails {
   };
 }
 
+export interface VideoThumbnail {
+  time: number;
+  src: string;
+}
+
 export interface VideoTrackItem extends TrackItemBase {
   type: "video";
   src?: string;
   trim?: { start: number; end: number };
   playbackRate?: number;
   details?: ExtendedVideoDetails;
-  thumbnail?: string;
+  thumbnails?: VideoThumbnail[];
 }
 
 export interface ImageTrackItem extends TrackItemBase {

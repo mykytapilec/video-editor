@@ -1,70 +1,86 @@
-// client/src/features/editor/timeline/timeline.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import useStore from "../store/use-store";
-import { VideoTrackItem } from "@/types";
-import { TimelineContainer } from "./timeline-container";
-import TimelineRuler from "./timeline-ruler";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import useStore from "@/features/editor/store/use-store";
 import TimelineBlock from "./timeline-block";
+import VideoThumbnailExtractor from "./video-thumbnail-extractor";
 
-const Timeline: React.FC = () => {
+export default function Timeline() {
   const outerRef = useRef<HTMLDivElement | null>(null);
+
   const trackItemsMap = useStore((s) => s.trackItemsMap);
+  const trackItemIds = useStore((s) => s.trackItemIds);
   const videoDuration = useStore((s) => s.videoDuration);
   const zoom = useStore((s) => s.zoom);
   const setContainerWidth = useStore((s) => s.setContainerWidth);
 
-  const [containerWidth, setLocalWidth] = useState(800);
+  const [containerWidth, setLocalContainerWidth] = useState(800);
 
   useEffect(() => {
-    if (!outerRef.current) return;
-    const ro = new ResizeObserver(() => {
-      const w = outerRef.current!.clientWidth;
-      setLocalWidth(w);
+    const el = outerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const w = el.clientWidth || 800;
+      setLocalContainerWidth(w);
       setContainerWidth(w);
-    });
-    ro.observe(outerRef.current);
+    };
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
     return () => ro.disconnect();
   }, [setContainerWidth]);
 
-  if (videoDuration <= 0) {
-    return (
-      <div className="h-[240px] flex items-center justify-center text-gray-400 bg-gray-900">
-        Video not loaded — no duration
-      </div>
-    );
-  }
-
-  const pixelsPerSecond = (containerWidth * zoom) / videoDuration;
-  const timelineWidth = Math.max(containerWidth * zoom, containerWidth);
-
-  const items = Object.values(trackItemsMap).filter(
-    (i): i is VideoTrackItem => i?.type === "video"
+  const items = useMemo(
+    () =>
+      trackItemIds
+        .map((id) => trackItemsMap[id])
+        .filter((i) => i && i.type === "video"),
+    [trackItemIds, trackItemsMap]
   );
 
   return (
-    <div className="relative h-[240px] bg-gray-900 p-3">
-      <div ref={outerRef} className="h-full overflow-x-auto">
-        <TimelineContainer width={timelineWidth}>
-          <TimelineRuler
-            width={timelineWidth}
-            pixelsPerSecond={pixelsPerSecond}
-            totalSeconds={videoDuration}
-          />
+    <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden">
+      {/* THUMBNAILS GENERATOR */}
+      <VideoThumbnailExtractor />
 
+      {/* TOOLBAR */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-700 text-white">
+        <div className="text-sm font-medium">Timeline</div>
+
+        <div className="flex items-center gap-2">
+          <button
+            className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
+            onClick={() => useStore.getState().setZoom(Math.max(0.25, zoom - 0.25))}
+          >
+            −
+          </button>
+
+          <div className="text-xs w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </div>
+
+          <button
+            className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
+            onClick={() => useStore.getState().setZoom(Math.min(4, zoom + 0.25))}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div ref={outerRef} className="relative flex-1 overflow-x-auto">
+        <div
+          className="relative h-full"
+          style={{ width: containerWidth * zoom }}
+        >
           {items.map((item) => (
-            <TimelineBlock
-              key={item.id}
-              item={item}
-              pixelsPerSecond={pixelsPerSecond}
-              snapStep={0.5}
-            />
+            <TimelineBlock key={item.id} item={item} />
           ))}
-        </TimelineContainer>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Timeline;
+}

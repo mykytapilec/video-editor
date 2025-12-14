@@ -7,7 +7,11 @@ import Scene from "./scene/scene";
 import StateManager from "@designcombo/state";
 import MenuList from "./menu-list";
 import { MenuItem } from "./menu-item/menu-item";
-import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
+import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import FloatingControl from "./control-item/floating-controls/floating-control";
 import CropModal from "./crop-modal/crop-modal";
 import MenuListHorizontal from "./menu-list-horizontal";
@@ -19,24 +23,22 @@ import { TrackItem } from "@/types";
 import { convertToITrackItem } from "@/utils/convertToITrackItem";
 import Timeline from "./timeline/timeline";
 import { SceneRef } from "./scene/scene.types";
+import { useEditorStore } from "./store/use-editor-store";
 
 const stateManager = new StateManager({
   size: { width: 1080, height: 1920 },
 });
 
-const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
+const Editor: React.FC = () => {
   const [projectName, setProjectName] = useState("Untitled video");
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
 
   const sceneRef = useRef<SceneRef>(null);
 
   const activeIds = useStore((s) => s.activeIds);
   const trackItemsMap = useStore((s) => s.trackItemsMap);
+  const updateTrackItem = useStore((s) => s.updateTrackItem);
 
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
-
-  console.log("🎬 create TrackItem", trackItem);
 
   const {
     setTrackItem: setLayoutTrackItem,
@@ -47,6 +49,48 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const isLargeScreen = useIsLargeScreen();
 
+  /** GROUPS **/
+  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
+  const groups = useEditorStore((s) => s.groups);
+
+  useEffect(() => {
+    if (!selectedGroupId) return;
+
+    const group = groups.find((g) => g.id === selectedGroupId);
+    if (!group) return;
+
+    const videoItem = Object.values(trackItemsMap).find(
+      (i) => i.type === "video"
+    );
+    if (!videoItem) return;
+
+    const duration = Math.max(0.5, group.end - group.start);
+
+    const nextTimelineStart = group.start;
+    const nextTrimStart = group.start;
+    const nextTrimEnd = group.start + duration;
+
+    // 🛑 ВАЖНО: защита от лишних обновлений
+    const isSame =
+      videoItem.timelineStart === nextTimelineStart &&
+      videoItem.trim?.start === nextTrimStart &&
+      videoItem.trim?.end === nextTrimEnd;
+
+    if (isSame) return;
+
+    updateTrackItem(videoItem.id, {
+      timelineStart: nextTimelineStart,
+      trim: {
+        start: nextTrimStart,
+        end: nextTrimEnd,
+      },
+    });
+  }, [selectedGroupId]); // ❗️ ТОЛЬКО selectedGroupId
+
+
+  /**
+   * активный элемент
+   */
   useEffect(() => {
     if (activeIds.length === 1) {
       const id = activeIds[0];
@@ -67,18 +111,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
     setTypeControlItem?.("");
   }, [isLargeScreen, setFloatingControl, setLabelControlItem, setTypeControlItem]);
 
-  if (loading) {
-    return <div className="flex h-screen w-screen items-center justify-center">Загрузка...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center text-red-500">
-        {error}
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen w-screen flex-col">
       <Navbar
@@ -90,34 +122,22 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
       <div className="flex flex-1">
         {isLargeScreen && (
-          <div className="bg-muted flex flex-none border-r border-border/80 h-[calc(100vh-44px)]">
+          <div className="bg-muted flex flex-none border-r h-[calc(100vh-44px)]">
             <MenuList />
             <MenuItem />
           </div>
         )}
 
         <ResizablePanelGroup style={{ flex: 1 }} direction="vertical">
-          <ResizablePanel className="relative" defaultSize={70}>
+          <ResizablePanel defaultSize={70}>
             <FloatingControl />
-            <div className="flex h-full flex-1">
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "relative",
-                  flex: 1,
-                  overflow: "hidden",
-                }}
-              >
-                <CropModal />
-                <Scene ref={sceneRef} />
-              </div>
-            </div>
+            <CropModal />
+            <Scene ref={sceneRef} />
           </ResizablePanel>
 
           <ResizableHandle />
 
-          <ResizablePanel className="min-h-[50px]" defaultSize={30}>
+          <ResizablePanel defaultSize={30}>
             <Timeline />
           </ResizablePanel>
 

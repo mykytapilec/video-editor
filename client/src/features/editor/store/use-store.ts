@@ -55,7 +55,7 @@ export default create<ITimelineStore>((set, get) => ({
 
     if (ids.length === 1) {
       const item = get().trackItemsMap[ids[0]];
-      if (item?.type === "video" && item.src) {
+      if (item?.type === "video" && typeof item.src === "string") {
         set({ currentVideoSrc: item.src });
       }
     }
@@ -69,7 +69,7 @@ export default create<ITimelineStore>((set, get) => ({
 
   setState: (partial) => set(partial),
 
-  /* ================= VIDEO DURATION (🔥 FIX) ================= */
+  /* ================= VIDEO DURATION ================= */
   videoDuration: 0,
 
   setVideoDuration: (d) =>
@@ -82,9 +82,11 @@ export default create<ITimelineStore>((set, get) => ({
 
       for (const id of state.trackItemIds) {
         const item = nextMap[id];
-        if (item?.type !== "video" || !item.trim) continue;
+        if (item?.type !== "video") continue;
 
-        if (item.trim.end <= 1.01) {
+        const trim = item.trim ?? { start: 0, end: 1 };
+
+        if (trim.end <= 1.01) {
           nextMap[id] = {
             ...item,
             trim: { start: 0, end: d },
@@ -129,6 +131,7 @@ export default create<ITimelineStore>((set, get) => ({
         ...defaultVideoDetails,
         ...((opts as Partial<VideoTrackItem>).details ?? {}),
       },
+      thumbnails: [],
     };
 
     set((state) => ({
@@ -155,7 +158,7 @@ export default create<ITimelineStore>((set, get) => ({
         end: Math.max(1, item.duration ?? 1),
       };
 
-      let nextTrim =
+      const nextTrim =
         "trim" in patch && (patch as Partial<VideoTrackItem>).trim
           ? (patch as Partial<VideoTrackItem>).trim!
           : { ...currentTrim };
@@ -173,6 +176,7 @@ export default create<ITimelineStore>((set, get) => ({
         timelineStart =
           (patch as Partial<VideoTrackItem>).timelineStart ?? timelineStart;
       }
+
       timelineStart = Math.max(
         0,
         Math.min(videoDuration - duration, timelineStart)
@@ -186,6 +190,10 @@ export default create<ITimelineStore>((set, get) => ({
         end: nextTrim.end,
         duration,
         timelineStart,
+        thumbnails:
+          "thumbnails" in patch
+            ? (patch as any).thumbnails
+            : item.thumbnails,
         details: {
           ...(item.details ?? defaultVideoDetails),
           ...("details" in patch && (patch as any).details
