@@ -1,12 +1,22 @@
 import { useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useEditorStore } from "../store/use-editor-store";
+import useStore  from "../store/use-store";
 
 export default function Groups() {
   const groups = useEditorStore((s) => s.groups);
   const fetchGroups = useEditorStore((s) => s.fetchGroups);
   const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
   const setSelectedGroupId = useEditorStore((s) => s.setSelectedGroupId);
+  const addVideoTrackItem = useStore((s) => s.addVideoTrackItem);
+  const setActiveIds = useStore((s) => s.setActiveIds);
+  const currentVideoSrc = useStore((s) => s.currentVideoSrc);
+
+  const handleClick = (item: any) => {
+    setSelectedGroupId(item.id);
+    const id = addVideoTrackItem(currentVideoSrc || '', { trim: { start: item.start, end: item.end }});
+    setActiveIds([id]);
+  }
 
   useEffect(() => {
     fetchGroups();
@@ -23,7 +33,7 @@ export default function Groups() {
       {groups.map((g) => (
         <div
           key={g.id}
-          onClick={() => setSelectedGroupId(g.id)}
+          onClick={() => handleClick(g)}
           className={`flex items-center gap-3 border rounded-lg p-2 hover:bg-accent cursor-pointer ${
             selectedGroupId === g.id ? "ring-2 ring-yellow-400" : ""
           }`}
