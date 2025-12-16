@@ -83,15 +83,6 @@ const Timeline: React.FC = () => {
               />
             );
           })}
-          {selectedGroup && (
-            <div
-              className="absolute top-0 h-full bg-yellow-400/30 pointer-events-none"
-              style={{
-                left: `${(selectedGroup.start / dur) * timelineWidth}px`,
-                width: `${((selectedGroup.end - selectedGroup.start) / dur) * timelineWidth}px`,
-              }}
-            />
-          )}
         </TimelineContainer>
       </div>
 
