@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, use } from "react";
 import { VideoTrackItem } from "@/types";
 import { TimelineBlock } from "./timeline-block";
 import useStore from "../store/use-store";
@@ -18,7 +18,6 @@ const Timeline: React.FC = () => {
 
   const groups = useEditorStore((s) => s.groups);
   const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
 
   useEffect(() => {
     const el = outerRef.current;

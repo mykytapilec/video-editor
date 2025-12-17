@@ -23,6 +23,7 @@ import ColorPicker from "@/components/color-picker";
 import { dispatch } from "@designcombo/events";
 import { EDIT_OBJECT } from "@designcombo/state";
 import { Label } from "@/components/ui/label";
+import { convertToITrackItem } from "@/utils/convertToITrackItem";
 
 const ActiveControlItem = ({
   trackItem,
@@ -558,7 +559,7 @@ const ControlItem = ({
 };
 
 export default function ControlItemHorizontal() {
-  const { activeIds, trackItemsMap, transitionsMap } = useStore();
+  const { activeId, trackItemsMap, transitionsMap } = useStore();
   const [trackItem, setTrackItem] = useState<ITrackItem | null>(null);
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
   const isLargeScreen = useIsLargeScreen();
@@ -574,18 +575,18 @@ export default function ControlItemHorizontal() {
   const controls = useAnimation();
 
   useEffect(() => {
-    if (activeIds.length === 1) {
-      const [id] = activeIds;
-      const trackItem = trackItemsMap[id];
-      if (trackItem) {
-        setTrackItem(trackItem);
-        setLayoutTrackItem(trackItem);
-      } else console.log(transitionsMap[id]);
+    if (activeId) {
+      const item = trackItemsMap[activeId] ?? null;
+      const iTrackItem = item ? convertToITrackItem(item) : null;
+      if (iTrackItem) {
+        setTrackItem(iTrackItem);
+        setLayoutTrackItem(iTrackItem);
+      } else console.log(transitionsMap[activeId]);
     } else {
       setTrackItem(null);
       setLayoutTrackItem(null);
     }
-  }, [activeIds, trackItemsMap]);
+  }, [activeId, trackItemsMap]);
   const handleMenuItemClick = (menuItem: string, label: string) => {
     if (!isLargeScreen) {
       setControItemDrawerOpen(true);

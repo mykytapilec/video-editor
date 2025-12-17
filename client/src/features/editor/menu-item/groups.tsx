@@ -9,13 +9,13 @@ export default function Groups() {
   const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
   const setSelectedGroupId = useEditorStore((s) => s.setSelectedGroupId);
   const addVideoTrackItem = useStore((s) => s.addVideoTrackItem);
-  const setActiveIds = useStore((s) => s.setActiveIds);
+  const setActiveId = useStore((s) => s.setActiveId);
   const currentVideoSrc = useStore((s) => s.currentVideoSrc);
 
   const handleClick = (item: any) => {
     setSelectedGroupId(item.id);
     const id = addVideoTrackItem(currentVideoSrc || '', { trim: { start: item.start, end: item.end }});
-    setActiveIds([id]);
+    setActiveId(id);
   }
 
   useEffect(() => {

@@ -1,3 +1,5 @@
+import { ITransition } from "@designcombo/types";
+
 // /client/src/types.ts
 export interface Group {
   id: string;
@@ -111,8 +113,9 @@ export interface ITimelineStore {
 
   trackItemsMap: Record<string, TrackItem>;
   trackItemIds: string[];
-  activeIds: string[];
-  setActiveIds: (ids: string[]) => void;
+  transitionsMap: Record<string, ITransition>;
+  activeId: string;
+  setActiveId: (id: string) => void;
 
   currentVideoSrc: string | null;
   setCurrentVideoSrc: (src: string | null) => void;

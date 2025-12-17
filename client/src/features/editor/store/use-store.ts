@@ -36,6 +36,9 @@ export default create<ITimelineStore>((set, get) => ({
   selectedGroupId: null,
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
+  transitionsMap: {},
+  setTransitionsMap: (m: any) => set({ transitionsMap: m }),
+
   trackItemsMap: {},
   trackItemIds: [],
 
@@ -45,11 +48,10 @@ export default create<ITimelineStore>((set, get) => ({
   containerWidth: 1080,
   setContainerWidth: (w) => set({ containerWidth: w }),
 
-  activeIds: [],
-  setActiveIds: (ids) => {
-    set({ activeIds: ids });
-    if (ids.length === 1) {
-      const id = ids[0];
+  activeId: '',
+  setActiveId: (id) => {
+    set({ activeId: id });
+    if (id) {
       const item = get().trackItemsMap[id];
       if (item?.type === "video" && item.src) {
         set({ currentVideoSrc: item.src });
@@ -134,7 +136,7 @@ export default create<ITimelineStore>((set, get) => ({
     }));
 
     set({ currentVideoSrc: src });
-    get().setActiveIds([id]);
+    get().setActiveId(id);
 
     return id;
   },

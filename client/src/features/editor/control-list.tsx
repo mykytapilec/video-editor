@@ -6,20 +6,19 @@ import useLayoutStore from "./store/use-layout-store";
 import useStore from "./store/use-store";
 
 export default function ControlList() {
-  const { activeIds, trackItemsMap } = useStore();
+  const { activeId, trackItemsMap } = useStore();
   const [controlType, setControlType] = useState<ItemType | null>(null);
 
   useEffect(() => {
-    if (activeIds.length === 1) {
-      const [id] = activeIds;
-      const trackItem = trackItemsMap[id];
+    if (activeId) {
+      const trackItem = trackItemsMap[activeId];
       if (trackItem) {
         setControlType(trackItem.type);
       }
     } else {
       setControlType(null);
     }
-  }, [activeIds, trackItemsMap]);
+  }, [activeId, trackItemsMap]);
 
   return <>{controlType && <ControlMenu controlType={controlType} />}</>;
 }

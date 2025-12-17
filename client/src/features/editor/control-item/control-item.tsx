@@ -21,7 +21,7 @@ const BasicGroup = ({ group }: any) => (
 );
 
 const Container = ({ children }: { children: React.ReactNode }) => {
-  const { activeIds, trackItemsMap } = useStore();
+  const { activeId, trackItemsMap } = useStore();
   const { groups, selectedGroupId } = useEditorStore();
   const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
 
@@ -40,9 +40,8 @@ const Container = ({ children }: { children: React.ReactNode }) => {
 
     setSelectedGroup(null);
 
-    if (activeIds.length === 1) {
-      const id = activeIds[0];
-      const item = trackItemsMap[id] || null;
+    if (activeId) {
+      const item = trackItemsMap[activeId] || null;
       setTrackItem(item);
 
       const iItem = item && item.type === "video" ? convertToITrackItem(item) : null;
@@ -51,7 +50,7 @@ const Container = ({ children }: { children: React.ReactNode }) => {
       setTrackItem(null);
       setLayoutTrackItem(null);
     }
-  }, [activeIds, trackItemsMap, selectedGroupId, groups, setLayoutTrackItem]);
+  }, [activeId, trackItemsMap, selectedGroupId, groups, setLayoutTrackItem]);
 
   return (
     <div className="flex w-[272px] flex-none border-l border-border/80 bg-muted hidden lg:block">

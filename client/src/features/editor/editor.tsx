@@ -31,7 +31,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const sceneRef = useRef<SceneRef>(null);
 
-  const activeIds = useStore((s) => s.activeIds);
+  const activeId = useStore((s) => s.activeId);
   const trackItemsMap = useStore((s) => s.trackItemsMap);
 
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
@@ -46,9 +46,8 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
   const isLargeScreen = useIsLargeScreen();
 
   useEffect(() => {
-    if (activeIds.length === 1) {
-      const id = activeIds[0];
-      const item = trackItemsMap[id] ?? null;
+    if (activeId) {
+      const item = trackItemsMap[activeId] ?? null;
       setTrackItem(item);
 
       const iTrackItem = item ? convertToITrackItem(item) : null;
@@ -57,7 +56,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
       setTrackItem(null);
       setLayoutTrackItem?.(null);
     }
-  }, [activeIds, trackItemsMap, setLayoutTrackItem]);
+  }, [activeId, trackItemsMap, setLayoutTrackItem]);
 
   useEffect(() => {
     setFloatingControl?.("");

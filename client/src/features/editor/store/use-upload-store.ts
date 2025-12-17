@@ -61,7 +61,7 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
               name: uploadedItem.name,
               trim: { start: 0, end: 5 },
             });
-            useStore.getState().setActiveIds([id]);
+            useStore.getState().setActiveId(id);
           }
         } catch (err) {
           set({
