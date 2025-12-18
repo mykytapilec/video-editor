@@ -7,7 +7,7 @@ import useStore from "../store/use-store";
 import useThumbnails from "@/features/editor/hooks/use-thumbnails";
 
 interface Props {
-  item: VideoTrackItem;
+  item: VideoTrackItem | null;
   pixelsPerSecond: number;
   snapStep: number;
 }
@@ -28,10 +28,10 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
   const [isLeftResize, setIsLeftResize] = useState(false);
   const [isRightResize, setIsRightResize] = useState(false);
 
-  const trim = item.trim ?? { start: item.start ?? 0, end: item.end ?? videoDuration };
+  const trim = item?.trim ?? { start: item?.start ?? 0, end: item?.end ?? videoDuration };
   const duration = Math.max(1, trim.end - trim.start);
   const width = Math.max(1, duration * pixelsPerSecond);
-  const left = (item.timelineStart ?? 0) * pixelsPerSecond;
+  const left = (item?.timelineStart ?? 0) * pixelsPerSecond;
 
   const snap = (v: number) => Math.round(v / snapStep) * snapStep;
 
@@ -46,7 +46,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
     return arr;
   }, [thumbsCount, trim.start, trim.end]);
 
-  const { thumbs, loading } = useThumbnails(item.id, item.src || null, times, {
+  const { thumbs, loading } = useThumbnails(item?.id, item?.src || null, times, {
     width: 240,
     height: 140,
     crossOrigin: "anonymous",
@@ -59,16 +59,16 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
     const onMove = (e: MouseEvent) => {
       const deltaSec = e.movementX / pixelsPerSecond;
 
-      const curTrim = item.trim ?? { start: item.start ?? 0, end: item.end ?? (item.start ?? 0) + duration };
+      const curTrim = item?.trim ?? { start: item?.start ?? 0, end: item?.end ?? (item?.start ?? 0) + duration };
       let { start, end } = curTrim;
-      let timelineStart = item.timelineStart ?? 0;
+      let timelineStart = item?.timelineStart ?? 0;
 
       if (isLeftResize) {
         let newStart = snap(start + deltaSec);
         if (newStart < 0) newStart = 0;
         if (newStart > end - minLen) newStart = end - minLen;
         timelineStart = Math.min(Math.max(0, timelineStart + (newStart - start)), videoDur - (end - newStart));
-        updateTrackItem(item.id, { trim: { ...curTrim, start: newStart }, timelineStart });
+        updateTrackItem({ trim: { ...curTrim, start: newStart }, timelineStart });
         return;
       }
 
@@ -76,7 +76,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         let newEnd = snap(end + deltaSec);
         if (newEnd > videoDur) newEnd = videoDur;
         if (newEnd < start + minLen) newEnd = start + minLen;
-        updateTrackItem(item.id, { trim: { ...curTrim, end: newEnd } });
+        updateTrackItem({ trim: { ...curTrim, end: newEnd } });
         return;
       }
 
@@ -86,7 +86,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         if (newTimelineStart + (end - start) > videoDur) {
           newTimelineStart = videoDur - (end - start);
         }
-        updateTrackItem(item.id, { timelineStart: newTimelineStart });
+        updateTrackItem({ timelineStart: newTimelineStart });
       }
     };
 

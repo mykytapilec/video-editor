@@ -9,7 +9,7 @@ interface UseThumbOpts {
 }
 
 export default function useThumbnails(
-  itemId: string,
+  itemId: string | undefined,
   src: string | null,
   times: number[],
   opts: UseThumbOpts = {}

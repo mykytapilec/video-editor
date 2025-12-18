@@ -9,6 +9,7 @@ export function SceneInteractions() {
     trackItemsMap: s.trackItemsMap,
     setState: s.setState,
   }));
+  const trackItemsMap = useStore((s) => s.trackItemsMap);
 
   useEffect(() => {
     const onSeeked = (ev: any) => {
@@ -18,13 +19,8 @@ export function SceneInteractions() {
         const timeMs = (frame / fps) * 1000;
         let visibleId: string = '';
 
-        const map = useStore.getState().trackItemsMap;
-        for (const key of Object.keys(map)) {
-          const it = map[key];
-          if (!it) continue;
-          if (it.start * 1000 <= timeMs && it.end * 1000 >= timeMs) {
-            visibleId = key;
-          }
+        if ((trackItemsMap?.start || 0) * 1000 <= timeMs && trackItemsMap?.end || (trackItemsMap?.duration || 0) * 1000 >= timeMs) {
+          visibleId = trackItemsMap?.id || '';
         }
 
         setState({ activeId: visibleId });

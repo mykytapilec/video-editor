@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import {
-  TrackItem,
   VideoTrackItem,
   ITimelineStore,
   ExtendedVideoDetails,
@@ -39,7 +38,7 @@ export default create<ITimelineStore>((set, get) => ({
   transitionsMap: {},
   setTransitionsMap: (m: any) => set({ transitionsMap: m }),
 
-  trackItemsMap: {},
+  trackItemsMap: null,
   trackItemIds: [],
 
   zoom: 1,
@@ -52,7 +51,7 @@ export default create<ITimelineStore>((set, get) => ({
   setActiveId: (id) => {
     set({ activeId: id });
     if (id) {
-      const item = get().trackItemsMap[id];
+      const item = get().trackItemsMap;
       if (item?.type === "video" && item.src) {
         set({ currentVideoSrc: item.src });
       }
@@ -71,18 +70,17 @@ export default create<ITimelineStore>((set, get) => ({
     set({ videoDuration: d });
 
     const state = get();
-    const items = { ...state.trackItemsMap };
+    const item = get().trackItemsMap;
 
-    Object.keys(items).forEach((id) => {
-      const it = items[id];
-      if (it && (it as any).type === "video") {
+      const it = item;
+      if (item && (item as any).type === "video") {
         const v = it as VideoTrackItem;
         const isSameSrc = Boolean(state.currentVideoSrc && v.src === state.currentVideoSrc);
         const isPlaceholder = typeof v.duration === "number" && v.duration <= 5;
         if (isSameSrc && isPlaceholder) {
           const newTrim = { start: 0, end: Math.max(1, d) };
           const newDuration = Math.max(1, d);
-          items[id] = {
+          const updated = {
             ...v,
             start: newTrim.start,
             end: newTrim.end,
@@ -90,11 +88,9 @@ export default create<ITimelineStore>((set, get) => ({
             duration: newDuration,
             timelineStart: Math.min(Math.max(0, v.timelineStart ?? 0), Math.max(0, newDuration - newDuration)),
           };
+          set({ trackItemsMap: updated });
         }
       }
-    });
-
-    set({ trackItemsMap: items });
   },
 
   addVideoTrackItem: (src, opts = {}) => {
@@ -131,7 +127,7 @@ export default create<ITimelineStore>((set, get) => ({
     };
 
     set((state) => ({
-      trackItemsMap: { ...state.trackItemsMap, [id]: item },
+      trackItemsMap: item,
       trackItemIds: [...state.trackItemIds, id],
     }));
 
@@ -141,8 +137,8 @@ export default create<ITimelineStore>((set, get) => ({
     return id;
   },
 
-  updateTrackItem: (id, patch) => {
-    const item = get().trackItemsMap[id];
+  updateTrackItem: (patch) => {
+    const item = get().trackItemsMap;
     if (!item) return;
 
     const videoDuration = get().videoDuration || 1;
@@ -192,14 +188,10 @@ export default create<ITimelineStore>((set, get) => ({
         },
       };
 
-      set((state) => ({
-        trackItemsMap: { ...state.trackItemsMap, [id]: updated },
-      }));
+      set({ trackItemsMap: updated });
     } else {
-      const updated: TrackItem = { ...item, ...(patch as Partial<TrackItem>) };
-      set((state) => ({
-        trackItemsMap: { ...state.trackItemsMap, [id]: updated },
-      }));
+      const updated: VideoTrackItem = { ...item, ...(patch as Partial<VideoTrackItem>) };
+      set({ trackItemsMap: updated });
     }
   },
 }));

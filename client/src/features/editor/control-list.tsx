@@ -11,9 +11,8 @@ export default function ControlList() {
 
   useEffect(() => {
     if (activeId) {
-      const trackItem = trackItemsMap[activeId];
-      if (trackItem) {
-        setControlType(trackItem.type);
+      if (trackItemsMap) {
+        setControlType(trackItemsMap.type);
       }
     } else {
       setControlType(null);

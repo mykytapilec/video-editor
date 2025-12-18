@@ -111,7 +111,7 @@ export interface ITimelineStore {
   selectedGroupId: string | null;
   setSelectedGroupId: (id: string | null) => void;
 
-  trackItemsMap: Record<string, TrackItem>;
+  trackItemsMap: VideoTrackItem | null;
   trackItemIds: string[];
   transitionsMap: Record<string, ITransition>;
   activeId: string;
@@ -124,7 +124,7 @@ export interface ITimelineStore {
   setState: (partial: Partial<ITimelineStore>) => void;
 
   addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => string;
-  updateTrackItem: (id: string, patch: Partial<TrackItem>) => void;
+  updateTrackItem: (patch: Partial<TrackItem>) => void;
 
   videoDuration: number;
   setVideoDuration: (d: number) => void;

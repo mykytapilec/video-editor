@@ -47,10 +47,9 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   useEffect(() => {
     if (activeId) {
-      const item = trackItemsMap[activeId] ?? null;
-      setTrackItem(item);
+      setTrackItem(trackItemsMap);
 
-      const iTrackItem = item ? convertToITrackItem(item) : null;
+      const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
       setLayoutTrackItem?.(iTrackItem);
     } else {
       setTrackItem(null);

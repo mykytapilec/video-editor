@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useRef, useState, useEffect, use } from "react";
-import { VideoTrackItem } from "@/types";
+import React, { useRef, useState, useEffect } from "react";
 import { TimelineBlock } from "./timeline-block";
 import useStore from "../store/use-store";
 import { TimelineContainer } from "./timeline-container";
 import TimelineRuler from "./timeline-ruler";
-import { useEditorStore } from "../store/use-editor-store";
 
 const GRID_STEP = 0.5;
 
@@ -15,9 +13,6 @@ const Timeline: React.FC = () => {
   const [containerWidth, setContainerWidth] = useState<number>(800);
   const [zoom, setZoom] = useState<number>(1);
   const { trackItemsMap, videoDuration } = useStore();
-
-  const groups = useEditorStore((s) => s.groups);
-  const selectedGroupId = useEditorStore((s) => s.selectedGroupId);
 
   useEffect(() => {
     const el = outerRef.current;
@@ -43,10 +38,6 @@ const Timeline: React.FC = () => {
   const pixelsPerSecond = (containerWidth * zoom) / dur;
   const timelineWidth = Math.max(containerWidth * zoom, 600);
 
-  const videoItems = Object.values(trackItemsMap).filter(
-    (it): it is VideoTrackItem => it.type === "video" && !!it.src
-  );
-
   const minZoom = 1;
   const maxZoom = 8;
   const zoomStep = 0.5;
@@ -64,24 +55,12 @@ const Timeline: React.FC = () => {
             pixelsPerSecond={pixelsPerSecond}
             totalSeconds={dur}
           />
-
-          {videoItems.map((item) => {
-            const itemCopy: VideoTrackItem = {
-              ...item,
-              duration: item.duration && item.duration > 0.1 ? item.duration : videoDuration,
-              trim: item.trim ?? { start: 0, end: videoDuration },
-              timelineStart: item.timelineStart ?? 0,
-            };
-
-            return (
-              <TimelineBlock
-                key={item.id}
-                item={itemCopy}
-                pixelsPerSecond={pixelsPerSecond}
-                snapStep={GRID_STEP}
-              />
-            );
-          })}
+          <TimelineBlock
+            key={trackItemsMap?.id}
+            item={trackItemsMap}
+            pixelsPerSecond={pixelsPerSecond}
+            snapStep={GRID_STEP}
+          />
         </TimelineContainer>
       </div>
 

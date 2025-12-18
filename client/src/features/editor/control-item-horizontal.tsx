@@ -576,8 +576,7 @@ export default function ControlItemHorizontal() {
 
   useEffect(() => {
     if (activeId) {
-      const item = trackItemsMap[activeId] ?? null;
-      const iTrackItem = item ? convertToITrackItem(item) : null;
+      const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
       if (iTrackItem) {
         setTrackItem(iTrackItem);
         setLayoutTrackItem(iTrackItem);

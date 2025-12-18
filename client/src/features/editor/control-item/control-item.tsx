@@ -41,10 +41,9 @@ const Container = ({ children }: { children: React.ReactNode }) => {
     setSelectedGroup(null);
 
     if (activeId) {
-      const item = trackItemsMap[activeId] || null;
-      setTrackItem(item);
+      setTrackItem(trackItemsMap);
 
-      const iItem = item && item.type === "video" ? convertToITrackItem(item) : null;
+      const iItem = trackItemsMap && trackItemsMap.type === "video" ? convertToITrackItem(trackItemsMap) : null;
       setLayoutTrackItem(iItem);
     } else {
       setTrackItem(null);
