@@ -1,48 +1,49 @@
 "use client";
 
-import React, { useMemo } from "react";
-import useTimelineStore from "@/features/editor/store/use-store";
+import React from "react";
+import useStore from "@/features/editor/store/use-store";
 
-type Props = {
+interface Props {
   pixelsPerSecond: number;
   height: number;
-};
+}
 
-export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
-  const videoDuration = useTimelineStore((s) => s.videoDuration);
-  const videoSrc = useTimelineStore((s) => s.currentVideoSrc);
+const SEGMENTS = 10;
 
-  const segments = 10; // визуальное разбиение фона
+export default function TimelineBackground({
+  pixelsPerSecond,
+  height,
+}: Props) {
+  const duration = useStore((s) => s.videoDuration);
 
-  const segmentWidth = useMemo(() => {
-    if (!videoDuration) return 0;
-    return (videoDuration * pixelsPerSecond) / segments;
-  }, [videoDuration, pixelsPerSecond]);
+  if (!duration || duration <= 0) {
+    return null;
+  }
 
-  if (!videoSrc || !videoDuration) return null;
+  const totalWidth = duration * pixelsPerSecond;
+  const segmentWidth = totalWidth / SEGMENTS;
 
   return (
     <div
-      className="absolute top-0 left-0 flex"
+      className="flex"
       style={{
+        width: totalWidth,
         height,
-        width: videoDuration * pixelsPerSecond,
+        backgroundColor: "#222",
         filter: "grayscale(100%)",
-        opacity: 0.35,
-        pointerEvents: "none",
       }}
     >
-      {Array.from({ length: segments }).map((_, i) => (
+      {Array.from({ length: SEGMENTS }).map((_, i) => (
         <div
           key={i}
-          className="relative border-r border-white/10"
+          className="relative border-r border-black/30"
           style={{
             width: segmentWidth,
             height: "100%",
-            backgroundColor: "rgba(255,255,255,0.05)",
+            backgroundColor: "rgba(255,255,255,0.15)",
           }}
         >
-          <div className="absolute inset-0 flex items-center justify-center text-white/30 text-xs">
+          <div className="absolute inset-0 flex items-center justify-center text-black/40 text-xs">
             –
           </div>
         </div>

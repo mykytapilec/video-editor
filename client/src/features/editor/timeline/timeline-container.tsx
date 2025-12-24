@@ -4,11 +4,13 @@ import React from "react";
 
 interface TimelineContainerProps {
   width: number;
+  height: number;
   children: React.ReactNode;
 }
 
 export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   width,
+  height,
   children,
 }) => {
   return (
@@ -16,13 +18,10 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
       className="relative select-none"
       style={{
         width,
-        minHeight: 120,
-        overflow: "hidden",
+        height,
       }}
     >
       {children}
     </div>
   );
 };
-
-export default TimelineContainer;
