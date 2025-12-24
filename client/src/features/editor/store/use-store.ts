@@ -35,11 +35,29 @@ export default create<ITimelineStore>((set, get) => ({
   selectedGroupId: null,
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
-  transitionsMap: {},
-  setTransitionsMap: (m: any) => set({ transitionsMap: m }),
-
+  // ❗ trackItemsMap теперь НЕ background video
   trackItemsMap: null,
   trackItemIds: [],
+
+  transitionsMap: {},
+
+  activeId: "",
+  setActiveId: (id) => set({ activeId: id }),
+
+  // 🎬 background video
+  currentVideoSrc: null,
+  setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
+
+  currentTime: 0,
+  setCurrentTime: (t) => set({ currentTime: t }),
+
+  setState: (partial) => set(partial),
+
+  videoDuration: 0,
+
+  setVideoDuration: (d) => {
+    set({ videoDuration: d });
+  },
 
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
@@ -47,92 +65,34 @@ export default create<ITimelineStore>((set, get) => ({
   containerWidth: 1080,
   setContainerWidth: (w) => set({ containerWidth: w }),
 
-  activeId: '',
-  setActiveId: (id) => {
-    set({ activeId: id });
-    if (id) {
-      const item = get().trackItemsMap;
-      if (item?.type === "video" && item.src) {
-        set({ currentVideoSrc: item.src });
-      }
-    }
-  },
-
-  currentVideoSrc: null,
-  currentTime: 0,
-  setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
-  setCurrentTime: (t) => set({ currentTime: t }),
-
-  setState: (partial) => set(partial),
-
-  videoDuration: 0,
-  setVideoDuration: (d: number) => {
-    set({ videoDuration: d });
-
-    const state = get();
-    const item = get().trackItemsMap;
-
-      const it = item;
-      if (item && (item as any).type === "video") {
-        const v = it as VideoTrackItem;
-        const isSameSrc = Boolean(state.currentVideoSrc && v.src === state.currentVideoSrc);
-        const isPlaceholder = typeof v.duration === "number" && v.duration <= 5;
-        if (isSameSrc && isPlaceholder) {
-          const newTrim = { start: 0, end: Math.max(1, d) };
-          const newDuration = Math.max(1, d);
-          const updated = {
-            ...v,
-            start: newTrim.start,
-            end: newTrim.end,
-            trim: newTrim,
-            duration: newDuration,
-            timelineStart: Math.min(Math.max(0, v.timelineStart ?? 0), Math.max(0, newDuration - newDuration)),
-          };
-          set({ trackItemsMap: updated });
-        }
-      }
-  },
-
+  // ⛔️ пока НЕ используем для background
   addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();
-    const videoDuration = get().videoDuration || 0;
 
-    const providedTrim = (opts as Partial<VideoTrackItem>).trim;
-    let trim;
-    if (providedTrim && typeof providedTrim.start === "number" && typeof providedTrim.end === "number") {
-      trim = { start: providedTrim.start, end: providedTrim.end };
-    } else if (videoDuration > 1) {
-      trim = { start: 0, end: videoDuration };
-    } else {
-      trim = { start: 0, end: 5 };
-    }
-
+    const trim = opts.trim ?? { start: 0, end: 5 };
     const duration = Math.max(1, trim.end - trim.start);
 
     const item: VideoTrackItem = {
       id,
       type: "video",
-      name: (opts as Partial<VideoTrackItem>).name ?? `Video ${id}`,
+      name: opts.name ?? `Group ${id}`,
       src,
-      timelineStart: (opts as Partial<VideoTrackItem>).timelineStart ?? 0,
+      timelineStart: 0,
       start: trim.start,
-      end: trim.start + duration,
+      end: trim.end,
       duration,
-      trim: { start: trim.start, end: trim.start + duration },
-      playbackRate: (opts as Partial<VideoTrackItem>).playbackRate ?? 1,
+      trim,
       details: {
         ...defaultVideoDetails,
-        ...((opts as Partial<VideoTrackItem>).details ?? {}),
+        ...(opts.details ?? {}),
       },
     };
 
-    set((state) => ({
+    set({
       trackItemsMap: item,
-      trackItemIds: [...state.trackItemIds, id],
-    }));
-
-    set({ currentVideoSrc: src });
-    get().setActiveId(id);
+      trackItemIds: [id],
+      activeId: id,
+    });
 
     return id;
   },
@@ -141,57 +101,11 @@ export default create<ITimelineStore>((set, get) => ({
     const item = get().trackItemsMap;
     if (!item) return;
 
-    const videoDuration = get().videoDuration || 1;
-    const minLength = 1;
-    const maxLength = Math.max(1, videoDuration);
-
-    if (item.type === "video") {
-      const currentTrim = item.trim ?? { start: item.start ?? 0, end: item.end ?? (item.start ?? 0) + Math.max(1, item.duration ?? 1) };
-      let nextTrim =
-        "trim" in patch && (patch as Partial<VideoTrackItem>).trim
-          ? (patch as Partial<VideoTrackItem>).trim!
-          : { ...currentTrim };
-
-      nextTrim.start = typeof nextTrim.start === "number" ? nextTrim.start : currentTrim.start;
-      nextTrim.end = typeof nextTrim.end === "number" ? nextTrim.end : currentTrim.end;
-
-      if (nextTrim.start < 0) nextTrim.start = 0;
-      if (nextTrim.start > videoDuration - minLength) nextTrim.start = Math.max(0, videoDuration - minLength);
-
-      if (nextTrim.end > videoDuration) nextTrim.end = videoDuration;
-      if (nextTrim.end < nextTrim.start + minLength) nextTrim.end = Math.min(videoDuration, nextTrim.start + minLength);
-
-      const trimmedLen = Math.min(maxLength, Math.max(minLength, nextTrim.end - nextTrim.start));
-      nextTrim.end = nextTrim.start + trimmedLen;
-
-      const start = nextTrim.start;
-      const end = nextTrim.end;
-      const duration = Math.max(minLength, end - start);
-
-      let timelineStart = item.timelineStart ?? 0;
-      if ("timelineStart" in patch) {
-        timelineStart = (patch as Partial<VideoTrackItem>).timelineStart ?? timelineStart;
-      }
-      timelineStart = Math.max(0, Math.min(videoDuration - duration, timelineStart));
-
-      const updated: VideoTrackItem = {
+    set({
+      trackItemsMap: {
         ...item,
         ...(patch as Partial<VideoTrackItem>),
-        start,
-        end,
-        duration,
-        trim: nextTrim,
-        timelineStart,
-        details: {
-          ...(item.details ?? defaultVideoDetails),
-          ...("details" in patch && (patch as any).details ? (patch as any).details : {}),
-        },
-      };
-
-      set({ trackItemsMap: updated });
-    } else {
-      const updated: VideoTrackItem = { ...item, ...(patch as Partial<VideoTrackItem>) };
-      set({ trackItemsMap: updated });
-    }
+      },
+    });
   },
 }));

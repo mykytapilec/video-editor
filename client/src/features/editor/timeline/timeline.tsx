@@ -1,88 +1,36 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { TimelineBlock } from "./timeline-block";
-import useStore from "../store/use-store";
-import { TimelineContainer } from "./timeline-container";
+import React from "react";
+import useTimelineStore from "@/features/editor/store/use-store";
 import TimelineRuler from "./timeline-ruler";
+import TimelineBackground from "./timeline-background";
+import TimelineContainer from "./timeline-container";
 
-const GRID_STEP = 0.5;
+export default function Timeline() {
+  const zoom = useTimelineStore((s) => s.zoom);
+  const duration = useTimelineStore((s) => s.videoDuration);
 
-const Timeline: React.FC = () => {
-  const outerRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(800);
-  const [zoom, setZoom] = useState<number>(1);
-  const { trackItemsMap, videoDuration } = useStore();
+  const pixelsPerSecond = 100 * zoom;
+  const height = 80;
 
-  useEffect(() => {
-    const el = outerRef.current;
-    if (!el) return;
-    const update = () => setContainerWidth(el.clientWidth || 800);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  if (!duration) return null;
 
-  if (!videoDuration || videoDuration <= 0) {
-    return (
-      <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
-        <div className="flex w-full h-full items-center justify-center text-gray-400">
-          Timeline loading...
-        </div>
-      </div>
-    );
-  }
-
-  const dur = Math.max(1, videoDuration);
-  const pixelsPerSecond = (containerWidth * zoom) / dur;
-  const timelineWidth = Math.max(containerWidth * zoom, 600);
-
-  const minZoom = 1;
-  const maxZoom = 8;
-  const zoomStep = 0.5;
+  const width = duration * pixelsPerSecond;
 
   return (
-    <div className="relative w-full h-[240px] bg-gray-900 rounded-lg overflow-hidden p-3">
-      <div
-        ref={outerRef}
-        className="w-full h-full overflow-x-auto relative"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <TimelineContainer width={timelineWidth}>
-          <TimelineRuler
-            width={timelineWidth}
-            pixelsPerSecond={pixelsPerSecond}
-            totalSeconds={dur}
-          />
-          <TimelineBlock
-            key={trackItemsMap?.id}
-            item={trackItemsMap}
-            pixelsPerSecond={pixelsPerSecond}
-            snapStep={GRID_STEP}
-          />
-        </TimelineContainer>
-      </div>
+    <div className="relative w-full h-full bg-black">
+      <TimelineRuler
+        width={width}
+        pixelsPerSecond={pixelsPerSecond}
+        totalSeconds={duration}
+      />
 
-      <div className="absolute top-2 right-2 flex gap-2">
-        <button
-          onClick={() => setZoom((z) => Math.max(minZoom, +(z - zoomStep).toFixed(2)))}
-          className={`px-2 py-1 rounded-md ${
-            zoom <= minZoom ? "bg-gray-600 text-gray-300 cursor-not-allowed" : "bg-gray-700 text-white hover:bg-gray-600"
-          }`}
-          disabled={zoom <= minZoom}
-        >
-          -
-        </button>
-        <button
-          onClick={() => setZoom((z) => Math.min(maxZoom, +(z + zoomStep).toFixed(2)))}
-          className="px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600"
-        >
-          +
-        </button>
-      </div>
+      <TimelineContainer width={width}>
+        <TimelineBackground
+          pixelsPerSecond={pixelsPerSecond}
+          height={height}
+        />
+      </TimelineContainer>
     </div>
   );
-};
-
-export default Timeline;
+}
