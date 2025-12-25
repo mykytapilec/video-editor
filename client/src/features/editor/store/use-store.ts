@@ -29,8 +29,19 @@ export default create<ITimelineStore>((set, get) => ({
 
   background: { type: "color", value: "#000000" },
 
-  groups: [],
+  // groups: [],
   groupsLoaded: false,
+
+  groups: [
+  {
+    id: "test-1",
+    name: "Episode 1",
+    start: 2,
+    end: 6,
+    trackItemIds: [],
+  },
+],
+
 
   selectedGroupId: null,
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
