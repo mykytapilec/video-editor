@@ -132,6 +132,9 @@ export interface ITimelineStore {
   setZoom: (z: number) => void;
   containerWidth: number;
   setContainerWidth: (w: number) => void;
+
+  scrollLeft: number;
+  setScrollLeft: (scrollLeft: number) => void;
 }
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";

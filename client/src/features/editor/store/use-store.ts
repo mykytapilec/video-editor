@@ -1,4 +1,4 @@
-// /client/src/features/editor/store/use-store.ts
+// client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import {
@@ -29,24 +29,20 @@ export default create<ITimelineStore>((set, get) => ({
 
   background: { type: "color", value: "#000000" },
 
-  // groups: [],
   groupsLoaded: false,
-
   groups: [
-  {
-    id: "test-1",
-    name: "Episode 1",
-    start: 2,
-    end: 6,
-    trackItemIds: [],
-  },
-],
-
+    {
+      id: "test-1",
+      name: "Episode 1",
+      start: 2,
+      end: 6,
+      trackItemIds: [],
+    },
+  ],
 
   selectedGroupId: null,
   setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
-  // ❗ trackItemsMap теперь НЕ background video
   trackItemsMap: null,
   trackItemIds: [],
 
@@ -55,7 +51,6 @@ export default create<ITimelineStore>((set, get) => ({
   activeId: "",
   setActiveId: (id) => set({ activeId: id }),
 
-  // 🎬 background video
   currentVideoSrc: null,
   setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
 
@@ -65,10 +60,7 @@ export default create<ITimelineStore>((set, get) => ({
   setState: (partial) => set(partial),
 
   videoDuration: 0,
-
-  setVideoDuration: (d) => {
-    set({ videoDuration: d });
-  },
+  setVideoDuration: (d) => set({ videoDuration: d }),
 
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
@@ -76,7 +68,9 @@ export default create<ITimelineStore>((set, get) => ({
   containerWidth: 1080,
   setContainerWidth: (w) => set({ containerWidth: w }),
 
-  // ⛔️ пока НЕ используем для background
+  scrollLeft: 0,
+  setScrollLeft: (scrollLeft: number) => set({ scrollLeft }),
+
   addVideoTrackItem: (src, opts = {}) => {
     const id = nanoid();
 
