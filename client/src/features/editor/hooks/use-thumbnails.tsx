@@ -1,12 +1,14 @@
-// client/src/features/editor/hooks/use-thumbnails.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { captureFrame } from "../utils/thumbnail-extractor";
 
 interface UseThumbOpts {
   width?: number;
   height?: number;
   crossOrigin?: string;
+  maxThumbs?: number;
 }
+
+const thumbsCache = new Map<string, string>();
 
 export default function useThumbnails(
   itemId: string | undefined,
@@ -16,17 +18,13 @@ export default function useThumbnails(
 ) {
   const [thumbs, setThumbs] = useState<(string | null)[]>([]);
   const [loading, setLoading] = useState(false);
+  const { width = 120, height = 60, crossOrigin, maxThumbs = 8 } = opts;
 
-  const { width = 120, height = 120, crossOrigin } = opts;
+  const timesRef = useRef<number[]>([]);
+  timesRef.current = times;
 
   useEffect(() => {
-    if (!times || times.length === 0) {
-      setThumbs([]);
-      setLoading(false);
-      return;
-    }
-
-    if (!src) {
+    if (!src || !times || times.length === 0 || !itemId) {
       setThumbs(times.map(() => null));
       setLoading(false);
       return;
@@ -38,17 +36,32 @@ export default function useThumbnails(
     const run = async () => {
       setLoading(true);
 
-      for (let i = 0; i < times.length; i++) {
-        try {
-          const data = await captureFrame(src, times[i], {
-            width,
-            height,
-            crossOrigin,
-          });
-          out[i] = data || null;
-        } catch {
-          out[i] = null;
+      const step = Math.max(1, Math.floor(times.length / maxThumbs));
+
+      for (let i = 0; i < times.length; i += step) {
+        const t = times[i];
+        const cacheKey = `${itemId}_${t}`;
+
+        if (thumbsCache.has(cacheKey)) {
+          out[i] = thumbsCache.get(cacheKey)!;
+        } else {
+          try {
+            const data = await captureFrame(src, t, {
+              width,
+              height,
+              crossOrigin,
+            });
+            if (data) {
+              thumbsCache.set(cacheKey, data);
+              out[i] = data;
+            } else {
+              out[i] = null;
+            }
+          } catch {
+            out[i] = null;
+          }
         }
+
         if (cancelled) return;
       }
 
@@ -63,7 +76,7 @@ export default function useThumbnails(
     return () => {
       cancelled = true;
     };
-  }, [itemId, src, width, height, crossOrigin, JSON.stringify(times)]);
+  }, [itemId, src, width, height, crossOrigin, maxThumbs, JSON.stringify(times)]);
 
   return { thumbs, loading };
 }

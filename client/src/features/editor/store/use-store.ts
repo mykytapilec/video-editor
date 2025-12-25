@@ -1,4 +1,3 @@
-// client/src/features/editor/store/use-store.ts
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import {
@@ -34,8 +33,8 @@ export default create<ITimelineStore>((set, get) => ({
     {
       id: "test-1",
       name: "Episode 1",
-      start: 2,
-      end: 6,
+      start: 0,
+      end: 0,
       trackItemIds: [],
     },
   ],

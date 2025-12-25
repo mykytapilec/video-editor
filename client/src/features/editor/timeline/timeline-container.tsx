@@ -1,3 +1,4 @@
+// client/src/features/editor/timeline/timeline-container.tsx
 "use client";
 
 import React, { forwardRef } from "react";
@@ -8,27 +9,23 @@ interface TimelineContainerProps {
   children: React.ReactNode;
 }
 
-export const TimelineContainer = forwardRef<
-  HTMLDivElement,
-  TimelineContainerProps
->(({ width, height, children }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className="relative w-full overflow-x-auto overflow-y-hidden"
-    >
+const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerProps>(
+  ({ width, height, children }, ref) => {
+    return (
       <div
-        className="relative select-none"
-        style={{
-          width,
-          height,
-        }}
+        ref={ref}
+        className="relative w-full overflow-x-auto overflow-y-hidden"
       >
-        {children}
+        <div
+          className="relative select-none"
+          style={{ width, height }}
+        >
+          {children}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 TimelineContainer.displayName = "TimelineContainer";
 

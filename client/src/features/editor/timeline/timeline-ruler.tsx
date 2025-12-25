@@ -1,3 +1,4 @@
+// client/src/features/editor/timeline/timeline-ruler.tsx
 import React from "react";
 
 type Props = {
@@ -19,8 +20,11 @@ export default function TimelineRuler({ width, pixelsPerSecond, totalSeconds }: 
     }
   }
 
+  const total = Math.ceil(totalSeconds / 5) * 5;
   const ticks: number[] = [];
-  for (let t = 0; t <= totalSeconds + 0.0001; t += step) ticks.push(Number(t.toFixed(3)));
+  for (let t = 0; t <= total + 0.0001; t += step) {
+    ticks.push(Number(t.toFixed(3)));
+  }
 
   return (
     <div className="relative w-full h-6 pointer-events-none">
