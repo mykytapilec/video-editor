@@ -31,9 +31,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const sceneRef = useRef<SceneRef>(null);
 
-  const activeId = useStore((s) => s.activeId);
-  const trackItemsMap = useStore((s) => s.trackItemsMap);
-
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
 
   const {
@@ -45,17 +42,17 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
   const isLargeScreen = useIsLargeScreen();
 
-  useEffect(() => {
-    if (activeId) {
-      setTrackItem(trackItemsMap);
+  // useEffect(() => {
+  //   if (activeId) {
+  //     setTrackItem(trackItemsMap);
 
-      const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
-      setLayoutTrackItem?.(iTrackItem);
-    } else {
-      setTrackItem(null);
-      setLayoutTrackItem?.(null);
-    }
-  }, [activeId, trackItemsMap, setLayoutTrackItem]);
+  //     const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
+  //     setLayoutTrackItem?.(iTrackItem);
+  //   } else {
+  //     setTrackItem(null);
+  //     setLayoutTrackItem?.(null);
+  //   }
+  // }, [activeId, trackItemsMap, setLayoutTrackItem]);
 
   useEffect(() => {
     setFloatingControl?.("");
@@ -64,7 +61,7 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
   }, [isLargeScreen, setFloatingControl, setLabelControlItem, setTypeControlItem]);
 
   if (loading) {
-    return <div className="flex h-screen w-screen items-center justify-center">Загрузка...</div>;
+    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>;
   }
 
   if (error) {

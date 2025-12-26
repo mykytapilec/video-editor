@@ -15,48 +15,43 @@ const defaultVideoDetails: ExtendedVideoDetails = {
   boxShadow: { color: "transparent", x: 0, y: 0, blur: 0 },
 };
 
-export default create<ITimelineStore>((set, get) => ({
+export default create<ITimelineStore>((set) => ({
   playerRef: null,
   setPlayerRef: (ref) => set({ playerRef: ref }),
 
-  sceneMoveableRef: null,
-  setSceneMoveableRef: (ref) => set({ sceneMoveableRef: ref }),
-
   fps: 30,
-  duration: 0,
-  size: { width: 1080, height: 1920 },
 
-  background: { type: "color", value: "#000000" },
+  /* ===== GROUPS ===== */
+  groups: [],
 
-  groupsLoaded: false,
-  groups: [
-    {
-      id: "test-1",
-      name: "Episode 1",
-      start: 0,
-      end: 0,
-      trackItemIds: [],
-    },
-  ],
+  setGroups: (groups) => set({ groups }),
 
-  selectedGroupId: null,
-  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
+  addGroup: (group) =>
+    set((state) => ({
+      groups: [...state.groups, group],
+    })),
 
-  trackItemsMap: null,
-  trackItemIds: [],
+  updateGroup: (id, patch) =>
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === id
+          ? {
+              ...g,
+              ...patch,
+              dirty: true,
+            }
+          : g
+      ),
+    })),
 
-  transitionsMap: {},
+  removeGroup: (id) =>
+    set((state) => ({
+      groups: state.groups.filter((g) => g.id !== id),
+    })),
 
-  activeId: "",
-  setActiveId: (id) => set({ activeId: id }),
-
-  currentVideoSrc: null,
-  setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
-
+  /* ===== playback ===== */
   currentTime: 0,
   setCurrentTime: (t) => set({ currentTime: t }),
-
-  setState: (partial) => set(partial),
 
   videoDuration: 0,
   setVideoDuration: (d) => set({ videoDuration: d }),
@@ -64,52 +59,5 @@ export default create<ITimelineStore>((set, get) => ({
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
 
-  containerWidth: 1080,
-  setContainerWidth: (w) => set({ containerWidth: w }),
-
-  scrollLeft: 0,
-  setScrollLeft: (scrollLeft: number) => set({ scrollLeft }),
-
-  addVideoTrackItem: (src, opts = {}) => {
-    const id = nanoid();
-
-    const trim = opts.trim ?? { start: 0, end: 5 };
-    const duration = Math.max(1, trim.end - trim.start);
-
-    const item: VideoTrackItem = {
-      id,
-      type: "video",
-      name: opts.name ?? `Group ${id}`,
-      src,
-      timelineStart: 0,
-      start: trim.start,
-      end: trim.end,
-      duration,
-      trim,
-      details: {
-        ...defaultVideoDetails,
-        ...(opts.details ?? {}),
-      },
-    };
-
-    set({
-      trackItemsMap: item,
-      trackItemIds: [id],
-      activeId: id,
-    });
-
-    return id;
-  },
-
-  updateTrackItem: (patch) => {
-    const item = get().trackItemsMap;
-    if (!item) return;
-
-    set({
-      trackItemsMap: {
-        ...item,
-        ...(patch as Partial<VideoTrackItem>),
-      },
-    });
-  },
+  setState: (partial) => set(partial),
 }));

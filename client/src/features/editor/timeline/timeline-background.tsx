@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import useStore from "../store/use-store";
 import useThumbnails from "../hooks/use-thumbnails";
+import { useEditorStore } from "../store/use-editor-store";
 
 interface Props {
   pixelsPerSecond: number;
@@ -8,7 +9,7 @@ interface Props {
 }
 
 export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
-  const currentVideoSrc = useStore((s) => s.currentVideoSrc);
+  const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
   const videoDuration = useStore((s) => s.videoDuration) || 1;
 
   const thumbsCount = 16;

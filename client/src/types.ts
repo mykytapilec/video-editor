@@ -11,12 +11,13 @@ export interface Group {
 }
 
 export interface TimelineGroup {
-  id: string;
-  idx?: number;
-  name: string | null;
-  start: number;
-  end: number;
+  id: string;       
+  sourceId?: number;  
+  start: number;    
+  end: number;   
+  name?: string;
   text?: string;
+  dirty?: boolean;
 }
 
 interface TrackItemBase {
@@ -98,43 +99,26 @@ export interface ITimelineStore {
   playerRef: React.RefObject<any> | null;
   setPlayerRef: (ref: React.RefObject<any> | null) => void;
 
-  sceneMoveableRef: React.RefObject<any> | null;
-  setSceneMoveableRef: (ref: React.RefObject<any> | null) => void;
-
   fps: number;
-  duration: number;
-  size: Size;
-  background: Background;
 
+  /* ===== GROUPS ===== */
   groups: TimelineGroup[];
-  groupsLoaded?: boolean;
-  selectedGroupId: string | null;
-  setSelectedGroupId: (id: string | null) => void;
+  setGroups: (groups: TimelineGroup[]) => void;
+  addGroup: (group: TimelineGroup) => void;
+  updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
+  removeGroup: (id: string) => void;
 
-  trackItemsMap: VideoTrackItem | null;
-  trackItemIds: string[];
-  transitionsMap: Record<string, ITransition>;
-  activeId: string;
-  setActiveId: (id: string) => void;
-
-  currentVideoSrc: string | null;
-  setCurrentVideoSrc: (src: string | null) => void;
+  /* ===== playback ===== */
   currentTime: number;
   setCurrentTime: (t: number) => void;
-  setState: (partial: Partial<ITimelineStore>) => void;
-
-  addVideoTrackItem: (src: string, opts?: Partial<VideoTrackItem>) => string;
-  updateTrackItem: (patch: Partial<TrackItem>) => void;
 
   videoDuration: number;
   setVideoDuration: (d: number) => void;
+
   zoom: number;
   setZoom: (z: number) => void;
-  containerWidth: number;
-  setContainerWidth: (w: number) => void;
 
-  scrollLeft: number;
-  setScrollLeft: (scrollLeft: number) => void;
+  setState: (partial: Partial<ITimelineStore>) => void;
 }
 
 export type UploadStatus = "pending" | "uploading" | "uploaded" | "error";

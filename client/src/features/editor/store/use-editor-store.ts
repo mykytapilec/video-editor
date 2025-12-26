@@ -10,17 +10,15 @@ export interface GroupItem {
 
 interface EditorStoreState {
   groups: GroupItem[];
-  setGroups: (groups: GroupItem[]) => void;
+  currentVideoSrc: string | null;
+  setCurrentVideoSrc: (src: string | null) => void;
   fetchGroups: () => Promise<void>;
-  selectedGroupId: number | null;
-  setSelectedGroupId: (id: number | null) => void;
 }
 
 export const useEditorStore = create<EditorStoreState>((set) => ({
   groups: [],
-  selectedGroupId: null,
-
-  setGroups: (groups) => set({ groups }),
+  currentVideoSrc: null,
+  setCurrentVideoSrc: (src) => set({ currentVideoSrc: src }),
 
   fetchGroups: async () => {
     try {
@@ -29,25 +27,21 @@ export const useEditorStore = create<EditorStoreState>((set) => ({
         cache: "no-store",
       });
 
-      if (!res.ok) {
-        console.error("Failed to load groups:", await res.text());
-        return;
-      }
+      if (!res.ok) return;
 
       const data = await res.json();
 
-      // Ensure ids are numbers (API returns number, but normalize just in case)
       const normalized = (data || []).map((g: any) => ({
-        ...g,
-        id: typeof g.id === "string" ? Number(g.id) : g.id,
-        start: typeof g.start === "string" ? Number(g.start) : g.start,
-        end: typeof g.end === "string" ? Number(g.end) : g.end,
+        id: Number(g.id),
+        idx: Number(g.idx),
+        text: g.text,
+        start: Number(g.start),
+        end: Number(g.end),
       }));
 
       set({ groups: normalized });
     } catch (e) {
-      console.error("Groups fetch error:", e);
+      console.error("Groups fetch error", e);
     }
   },
-  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 }));

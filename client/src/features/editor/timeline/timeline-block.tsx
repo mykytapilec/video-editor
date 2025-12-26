@@ -21,7 +21,6 @@ const formatTime = (sec: number) => {
 };
 
 export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
-  const { updateTrackItem } = useStore();
   const videoDuration = useStore((s) => s.videoDuration) || 1;
 
   const [isDragging, setIsDragging] = useState(false);
@@ -68,7 +67,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         if (newStart < 0) newStart = 0;
         if (newStart > end - minLen) newStart = end - minLen;
         timelineStart = Math.min(Math.max(0, timelineStart + (newStart - start)), videoDur - (end - newStart));
-        updateTrackItem({ trim: { ...curTrim, start: newStart }, timelineStart });
+        // updateTrackItem({ trim: { ...curTrim, start: newStart }, timelineStart });
         return;
       }
 
@@ -76,7 +75,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         let newEnd = snap(end + deltaSec);
         if (newEnd > videoDur) newEnd = videoDur;
         if (newEnd < start + minLen) newEnd = start + minLen;
-        updateTrackItem({ trim: { ...curTrim, end: newEnd } });
+        // updateTrackItem({ trim: { ...curTrim, end: newEnd } });
         return;
       }
 
@@ -86,7 +85,7 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         if (newTimelineStart + (end - start) > videoDur) {
           newTimelineStart = videoDur - (end - start);
         }
-        updateTrackItem({ timelineStart: newTimelineStart });
+        // updateTrackItem({ timelineStart: newTimelineStart });
       }
     };
 

@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { UploadFile } from "@/types";
 import useStore from "./use-store";
 import { normalizeVideoUrl } from "@/utils/normalize-url";
+import { useEditorStore } from "./use-editor-store";
 
 export interface UploadStore {
   uploads: UploadFile[];
@@ -64,7 +65,7 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
         if (uploadedItem.url) {
           const videoUrl = normalizeVideoUrl(uploadedItem.url);
 
-          useStore.getState().setCurrentVideoSrc(videoUrl);
+          useEditorStore.getState().setCurrentVideoSrc(videoUrl);
         }
       } catch (err) {
         set({
