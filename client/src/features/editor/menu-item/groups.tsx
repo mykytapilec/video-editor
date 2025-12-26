@@ -8,6 +8,7 @@ import { mapApiGroupsToTimeline } from "./mapGroups";
 export default function Groups() {
   const fetchGroups = useEditorStore((s) => s.fetchGroups);
   const apiGroups = useEditorStore((s) => s.groups);
+
   const setTimelineGroups = useTimelineStore((s) => s.setGroups);
 
   useEffect(() => {
@@ -15,14 +16,12 @@ export default function Groups() {
   }, [fetchGroups]);
 
   useEffect(() => {
-    if (apiGroups.length > 0) {
-      setTimelineGroups(mapApiGroupsToTimeline(apiGroups));
-    }
+    setTimelineGroups(mapApiGroupsToTimeline(apiGroups));
   }, [apiGroups, setTimelineGroups]);
 
   return (
-    <div className="p-3 text-sm text-muted-foreground">
-      Loaded groups: {apiGroups.length}
+    <div className="p-3 text-xs text-muted-foreground">
+      Groups loaded: {apiGroups.length}
     </div>
   );
 }
