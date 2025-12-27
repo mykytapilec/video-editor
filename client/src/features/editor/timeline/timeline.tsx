@@ -6,6 +6,7 @@ import useTimelineStore from "@/features/editor/store/use-store";
 import TimelineRuler from "./timeline-ruler";
 import TimelineBackground from "./timeline-background";
 import TimelineContainer from "./timeline-container";
+import TimelineGroups from "./timeline-groups";
 
 const BASE_PX_PER_SECOND = 100;
 
@@ -82,6 +83,10 @@ function TimelineContainerWrapper({ duration }: { duration: number }) {
         />
 
         <TimelineBackground
+          pixelsPerSecond={pixelsPerSecond}
+          height={height}
+        />
+        <TimelineGroups
           pixelsPerSecond={pixelsPerSecond}
           height={height}
         />
