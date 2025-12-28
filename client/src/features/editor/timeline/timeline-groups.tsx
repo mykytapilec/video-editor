@@ -16,12 +16,13 @@ export default function TimelineGroups({ pixelsPerSecond, height }: Props) {
   return (
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
       {groups.map((group) => (
-        <TimelineGroupBlock
-          key={group.id}
-          group={group}
-          pixelsPerSecond={pixelsPerSecond}
-          height={height}
-        />
+        <div key={group.id} className="pointer-events-auto">
+          <TimelineGroupBlock
+              group={group}
+              pixelsPerSecond={pixelsPerSecond}
+              height={height}
+            />
+        </div>
       ))}
     </div>
   );

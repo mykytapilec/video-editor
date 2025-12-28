@@ -11,11 +11,11 @@ export interface Group {
 }
 
 export interface TimelineGroup {
-  id: string;       
-  sourceId?: number;  
-  start: number;    
-  end: number;   
-  name?: string;
+  id: string;
+  sourceId: number;
+  start: number;
+  end: number;
+  name: string | null;
   text?: string;
   dirty?: boolean;
 }
