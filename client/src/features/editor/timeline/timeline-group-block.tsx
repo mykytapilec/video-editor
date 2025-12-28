@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Moveable from "react-moveable";
+import { useRef } from "react";
 import { TimelineGroup } from "@/types";
-import useTimelineStore from "../store/use-store";
+import useStore from "../store/use-store";
 
 type Props = {
   group: TimelineGroup;
@@ -11,111 +10,108 @@ type Props = {
   height: number;
 };
 
-const MIN_DURATION = 0.1;
-
-export default function TimelineGroupBlock({
+export function TimelineGroupBlock({
   group,
   pixelsPerSecond,
   height,
 }: Props) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const videoDuration = useStore((s) => s.videoDuration);
 
-  const updateGroup = useTimelineStore((s) => s.updateGroup);
+  const dragStartX = useRef(0);
+  const startAtDrag = useRef(0);
 
-  const startRef = useRef<{
-    start: number;
-    end: number;
-  } | null>(null);
+  const resizeStartX = useRef(0);
+  const startAtResize = useRef(0);
+  const endAtResize = useRef(0);
 
-  const leftPx = group.start * pixelsPerSecond;
-  const widthPx = Math.max(
-    (group.end - group.start) * pixelsPerSecond,
-    1
-  );
+  const drag = useStore((s) => s.updateGroupDrag);
+  const resizeLeft = useStore((s) => s.updateGroupResizeLeft);
+  const resizeRight = useStore((s) => s.updateGroupResizeRight);
 
-  const commit = (start: number, end: number) => {
-    const safeStart = Math.max(0, start);
-    const safeEnd = Math.max(safeStart + MIN_DURATION, end);
+  /* ===== UI CLIPPING ===== */
+  const visibleStart = Math.max(0, group.start);
+  const visibleEnd = Math.min(group.end, videoDuration);
+  const visibleDuration = visibleEnd - visibleStart;
 
-    updateGroup(group.id, {
-      start: safeStart,
-      end: safeEnd,
-    });
+  if (visibleDuration <= 0) return null;
+
+  const onDragStart = (e: React.MouseEvent) => {
+    dragStartX.current = e.clientX;
+    startAtDrag.current = group.start;
+
+    const move = (ev: MouseEvent) => {
+      const dx = ev.clientX - dragStartX.current;
+      drag(group.id, startAtDrag.current + dx / pixelsPerSecond);
+    };
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const onResizeLeft = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    resizeStartX.current = e.clientX;
+    startAtResize.current = group.start;
+
+    const move = (ev: MouseEvent) => {
+      const dx = ev.clientX - resizeStartX.current;
+      resizeLeft(group.id, startAtResize.current + dx / pixelsPerSecond);
+    };
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const onResizeRight = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    resizeStartX.current = e.clientX;
+    endAtResize.current = group.end;
+
+    const move = (ev: MouseEvent) => {
+      const dx = ev.clientX - resizeStartX.current;
+      resizeRight(group.id, endAtResize.current + dx / pixelsPerSecond);
+    };
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
   return (
-    <>
+    <div
+      className="absolute top-0 rounded bg-violet-500/80 border border-white/80 cursor-grab"
+      style={{
+        height,
+        left: visibleStart * pixelsPerSecond,
+        width: visibleDuration * pixelsPerSecond,
+      }}
+      onMouseDown={onDragStart}
+    >
+      {/* resize left */}
       <div
-        ref={ref}
-        className="absolute rounded-md bg-purple-500/40 border border-white/60"
-        style={{
-          left: leftPx,
-          width: widthPx,
-          height,
-          top: 0,
-        }}
+        onMouseDown={onResizeLeft}
+        className="absolute left-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
       />
 
-      <Moveable
-        target={ref}
-        origin={false}
-        draggable
-        resizable
-        throttleDrag={0}
-        throttleResize={0}
-        renderDirections={["w", "e"]}
-        keepRatio={false}
-
-        onDragStart={() => {
-          startRef.current = {
-            start: group.start,
-            end: group.end,
-          };
-        }}
-
-        onDrag={(e) => {
-          if (!startRef.current) return;
-
-          const deltaSeconds =
-            e.beforeTranslate[0] / pixelsPerSecond;
-
-          commit(
-            startRef.current.start + deltaSeconds,
-            startRef.current.end + deltaSeconds
-          );
-        }}
-
-        onResizeStart={() => {
-          startRef.current = {
-            start: group.start,
-            end: group.end,
-          };
-        }}
-
-        onResize={(e) => {
-          if (!startRef.current) return;
-
-          const deltaSeconds =
-            e.drag.beforeTranslate[0] / pixelsPerSecond;
-
-          // LEFT
-          if (e.direction[0] === -1) {
-            commit(
-              startRef.current.start + deltaSeconds,
-              startRef.current.end
-            );
-          }
-
-          // RIGHT
-          if (e.direction[0] === 1) {
-            const newDuration = e.width / pixelsPerSecond;
-            commit(
-              startRef.current.start,
-              startRef.current.start + newDuration
-            );
-          }
-        }}
+      {/* resize right */}
+      <div
+        onMouseDown={onResizeRight}
+        className="absolute right-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
       />
-    </>
+    </div>
   );
 }

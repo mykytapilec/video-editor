@@ -118,6 +118,11 @@ export interface ITimelineStore {
   zoom: number;
   setZoom: (z: number) => void;
 
+  /* ===== GROUP MANIPULATION (with constraints) ===== */
+  updateGroupDrag: (id: string, wantedStart: number) => void;
+  updateGroupResizeLeft: (id: string, wantedStart: number) => void;
+  updateGroupResizeRight: (id: string, wantedEnd: number) => void;
+
   setState: (partial: Partial<ITimelineStore>) => void;
 }
 

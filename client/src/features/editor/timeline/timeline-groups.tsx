@@ -1,7 +1,7 @@
 "use client";
 
 import useTimelineStore from "@/features/editor/store/use-store";
-import TimelineGroupBlock from "./timeline-group-block";
+import { TimelineGroupBlock } from "./timeline-group-block";
 
 interface Props {
   pixelsPerSecond: number;

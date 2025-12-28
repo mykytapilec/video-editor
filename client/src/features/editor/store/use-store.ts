@@ -1,10 +1,14 @@
 import { create } from "zustand";
-import { nanoid } from "nanoid";
 import {
-  VideoTrackItem,
   ITimelineStore,
   ExtendedVideoDetails,
 } from "@/types";
+
+import {
+  clamp,
+  getNeighborBounds,
+  MIN_GROUP_DURATION,
+} from "../utils/groupConstraints";
 
 const defaultVideoDetails: ExtendedVideoDetails = {
   volume: 100,
@@ -15,7 +19,8 @@ const defaultVideoDetails: ExtendedVideoDetails = {
   boxShadow: { color: "transparent", x: 0, y: 0, blur: 0 },
 };
 
-export default create<ITimelineStore>((set) => ({
+export default create<ITimelineStore>((set, get) => ({
+  /* ===== player ===== */
   playerRef: null,
   setPlayerRef: (ref) => set({ playerRef: ref }),
 
@@ -48,6 +53,110 @@ export default create<ITimelineStore>((set) => ({
     set((state) => ({
       groups: state.groups.filter((g) => g.id !== id),
     })),
+
+  /* ===== GROUP MANIPULATION (with constraints) ===== */
+
+  /**
+   * Drag whole group (move)
+   */
+  updateGroupDrag: (id: string, wantedStart: number) => {
+    const { groups, videoDuration } = get();
+    const group = groups.find((g) => g.id === id);
+    if (!group) return;
+
+    const duration = group.end - group.start;
+
+    const { minStart, maxEnd } = getNeighborBounds(
+      groups,
+      id,
+      videoDuration
+    );
+
+    const start = clamp(
+      wantedStart,
+      minStart,
+      maxEnd - duration
+    );
+
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === id
+          ? {
+              ...g,
+              start,
+              end: start + duration,
+              dirty: true,
+            }
+          : g
+      ),
+    }));
+  },
+
+  /**
+   * Resize left edge
+   */
+  updateGroupResizeLeft: (id: string, wantedStart: number) => {
+    const { groups } = get();
+    const group = groups.find((g) => g.id === id);
+    if (!group) return;
+
+    const { minStart } = getNeighborBounds(
+      groups,
+      id,
+      get().videoDuration
+    );
+
+    const start = clamp(
+      wantedStart,
+      minStart,
+      group.end - MIN_GROUP_DURATION
+    );
+
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === id
+          ? {
+              ...g,
+              start,
+              dirty: true,
+            }
+          : g
+      ),
+    }));
+  },
+
+  /**
+   * Resize right edge
+   */
+  updateGroupResizeRight: (id: string, wantedEnd: number) => {
+    const { groups } = get();
+    const group = groups.find((g) => g.id === id);
+    if (!group) return;
+
+    const { maxEnd } = getNeighborBounds(
+      groups,
+      id,
+      get().videoDuration
+    );
+
+    const end = clamp(
+      wantedEnd,
+      group.start + MIN_GROUP_DURATION,
+      maxEnd
+    );
+
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === id
+          ? {
+              ...g,
+              end,
+              dirty: true,
+            }
+          : g
+      ),
+    }));
+  },
 
   /* ===== playback ===== */
   currentTime: 0,
