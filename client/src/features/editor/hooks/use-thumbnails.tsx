@@ -46,11 +46,7 @@ export default function useThumbnails(
           out[i] = thumbsCache.get(cacheKey)!;
         } else {
           try {
-            const data = await captureFrame(src, t, {
-              width,
-              height,
-              crossOrigin,
-            });
+            const data = await captureFrame(src, t, { width, height, crossOrigin });
             if (data) {
               thumbsCache.set(cacheKey, data);
               out[i] = data;
@@ -66,7 +62,8 @@ export default function useThumbnails(
       }
 
       if (!cancelled) {
-        setThumbs(out);
+        const fullOut: (string | null)[] = times.map((_, idx) => out[idx] || null);
+        setThumbs(fullOut);
         setLoading(false);
       }
     };
