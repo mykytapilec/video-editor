@@ -1,26 +1,13 @@
 import { create } from "zustand";
+import { ITimelineStore, TimelineGroup } from "@/types";
 import {
-  ITimelineStore,
-  ExtendedVideoDetails,
-} from "@/types";
-
-import {
-  clamp,
-  getNeighborBounds,
-  MIN_GROUP_DURATION,
+  constrainGroupDrag,
+  constrainGroupResizeLeft,
+  constrainGroupResizeRight,
 } from "../utils/groupConstraints";
 
-const defaultVideoDetails: ExtendedVideoDetails = {
-  volume: 100,
-  opacity: 100,
-  borderRadius: 0,
-  borderWidth: 0,
-  borderColor: "#000000",
-  boxShadow: { color: "transparent", x: 0, y: 0, blur: 0 },
-};
-
 export default create<ITimelineStore>((set, get) => ({
-  /* ===== player ===== */
+  /* ===== PLAYER ===== */
   playerRef: null,
   setPlayerRef: (ref) => set({ playerRef: ref }),
 
@@ -28,6 +15,9 @@ export default create<ITimelineStore>((set, get) => ({
 
   /* ===== GROUPS ===== */
   groups: [],
+  selectedGroupId: null,
+
+  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 
   setGroups: (groups) => set({ groups }),
 
@@ -39,13 +29,7 @@ export default create<ITimelineStore>((set, get) => ({
   updateGroup: (id, patch) =>
     set((state) => ({
       groups: state.groups.map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              ...patch,
-              dirty: true,
-            }
-          : g
+        g.id === id ? { ...g, ...patch, dirty: true } : g
       ),
     })),
 
@@ -54,111 +38,89 @@ export default create<ITimelineStore>((set, get) => ({
       groups: state.groups.filter((g) => g.id !== id),
     })),
 
-  /* ===== GROUP MANIPULATION (with constraints) ===== */
-
-  /**
-   * Drag whole group (move)
-   */
-  updateGroupDrag: (id: string, wantedStart: number) => {
+  /* ===== GROUP MANIPULATION (WITH CONSTRAINTS) ===== */
+  updateGroupDrag: (id, wantedStart) => {
     const { groups, videoDuration } = get();
     const group = groups.find((g) => g.id === id);
     if (!group) return;
 
-    const duration = group.end - group.start;
-
-    const { minStart, maxEnd } = getNeighborBounds(
+    const newStart = constrainGroupDrag(
       groups,
       id,
+      wantedStart,
       videoDuration
     );
 
-    const start = clamp(
-      wantedStart,
-      minStart,
-      maxEnd - duration
-    );
+    if (typeof newStart !== "number") return;
 
-    set((state) => ({
-      groups: state.groups.map((g) =>
+    set({
+      groups: groups.map((g) =>
         g.id === id
           ? {
               ...g,
-              start,
-              end: start + duration,
+              start: newStart,
+              end: newStart + (group.end - group.start),
               dirty: true,
             }
           : g
       ),
-    }));
+    });
   },
 
-  /**
-   * Resize left edge
-   */
-  updateGroupResizeLeft: (id: string, wantedStart: number) => {
-    const { groups } = get();
+  updateGroupResizeLeft: (id, wantedStart) => {
+    const { groups, videoDuration } = get();
     const group = groups.find((g) => g.id === id);
     if (!group) return;
 
-    const { minStart } = getNeighborBounds(
+    const newStart = constrainGroupResizeLeft(
       groups,
       id,
-      get().videoDuration
-    );
-
-    const start = clamp(
       wantedStart,
-      minStart,
-      group.end - MIN_GROUP_DURATION
+      videoDuration
     );
 
-    set((state) => ({
-      groups: state.groups.map((g) =>
+    if (typeof newStart !== "number") return;
+
+    set({
+      groups: groups.map((g) =>
         g.id === id
           ? {
               ...g,
-              start,
+              start: newStart,
               dirty: true,
             }
           : g
       ),
-    }));
+    });
   },
 
-  /**
-   * Resize right edge
-   */
-  updateGroupResizeRight: (id: string, wantedEnd: number) => {
-    const { groups } = get();
-    const group = groups.find((g) => g.id === id);
-    if (!group) return;
+  updateGroupResizeRight: (id, wantedEnd) => {
+    const { groups, videoDuration } = get();
 
-    const { maxEnd } = getNeighborBounds(
+    const newEnd = constrainGroupResizeRight(
       groups,
       id,
-      get().videoDuration
-    );
-
-    const end = clamp(
       wantedEnd,
-      group.start + MIN_GROUP_DURATION,
-      maxEnd
+      videoDuration
     );
 
-    set((state) => ({
-      groups: state.groups.map((g) =>
+    if (typeof newEnd !== "number") return;
+
+    set({
+      groups: groups.map((g) =>
         g.id === id
           ? {
               ...g,
-              end,
+              end: newEnd,
               dirty: true,
             }
           : g
       ),
-    }));
+    });
   },
 
-  /* ===== playback ===== */
+
+  /* ===== PLAYBACK ===== */
   currentTime: 0,
   setCurrentTime: (t) => set({ currentTime: t }),
 
@@ -168,8 +130,18 @@ export default create<ITimelineStore>((set, get) => ({
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
 
-  setState: (partial) => set(partial),
+  /* ===== PLAY GROUP ===== */
+  playGroup: (groupId: string) => {
+    const { groups, playerRef } = get();
+    const group = groups.find((g) => g.id === groupId);
 
-  selectedGroupId: null,
-  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
+    if (!group) return;
+    if (!playerRef || !playerRef.current) return;
+
+    const video = playerRef.current;
+    video.currentTime = group.start;
+    video.play();
+  },
+
+  setState: (partial) => set(partial),
 }));

@@ -126,6 +126,9 @@ export interface ITimelineStore {
   updateGroupResizeLeft: (id: string, wantedStart: number) => void;
   updateGroupResizeRight: (id: string, wantedEnd: number) => void;
 
+  /* ===== GROUP PLAYBACK ===== */
+  playGroup: (groupId: string) => void;
+
   setState: (partial: Partial<ITimelineStore>) => void;
 }
 

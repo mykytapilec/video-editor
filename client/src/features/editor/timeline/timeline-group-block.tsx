@@ -10,11 +10,7 @@ type Props = {
   height: number;
 };
 
-export function TimelineGroupBlock({
-  group,
-  pixelsPerSecond,
-  height,
-}: Props) {
+export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
   const videoDuration = useStore((s) => s.videoDuration);
 
   const dragStartX = useRef(0);
@@ -106,6 +102,7 @@ export function TimelineGroupBlock({
       style={{
         left: group.start * pixelsPerSecond,
         width: (group.end - group.start) * pixelsPerSecond,
+        height,
       }}
       onMouseDown={(e) => {
         setSelectedGroupId(group.id);

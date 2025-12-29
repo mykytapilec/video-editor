@@ -16,12 +16,23 @@ export default function Groups() {
   }, [fetchGroups]);
 
   useEffect(() => {
-    setTimelineGroups(mapApiGroupsToTimeline(apiGroups));
+    if (apiGroups && apiGroups.length > 0) {
+      const mapped = mapApiGroupsToTimeline(apiGroups)
+        .filter(
+          (g) =>
+            g &&
+            typeof g.start === "number" &&
+            typeof g.end === "number" &&
+            g.end > g.start
+        );
+      setTimelineGroups(mapped);
+      console.log("Mapped timeline groups:", mapped);
+    }
   }, [apiGroups, setTimelineGroups]);
 
   return (
     <div className="p-3 text-xs text-muted-foreground">
-      Groups loaded: {apiGroups.length}
+      Groups loaded: {apiGroups?.length || 0}
     </div>
   );
 }
