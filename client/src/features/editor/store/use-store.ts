@@ -169,4 +169,7 @@ export default create<ITimelineStore>((set, get) => ({
   setZoom: (z) => set({ zoom: z }),
 
   setState: (partial) => set(partial),
+
+  selectedGroupId: null,
+  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
 }));

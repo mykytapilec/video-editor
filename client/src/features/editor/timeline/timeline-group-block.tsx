@@ -27,6 +27,10 @@ export function TimelineGroupBlock({
   const drag = useStore((s) => s.updateGroupDrag);
   const resizeLeft = useStore((s) => s.updateGroupResizeLeft);
   const resizeRight = useStore((s) => s.updateGroupResizeRight);
+  const selectedGroupId = useStore((s) => s.selectedGroupId);
+  const setSelectedGroupId = useStore((s) => s.setSelectedGroupId);
+
+  const isSelected = selectedGroupId === group.id;
 
   /* ===== UI CLIPPING ===== */
   const visibleStart = Math.max(0, group.start);
@@ -93,13 +97,20 @@ export function TimelineGroupBlock({
 
   return (
     <div
-      className="absolute top-0 rounded bg-violet-500/80 border border-white/80 cursor-grab"
+      className={
+        "absolute top-0 h-full rounded cursor-grab select-none " +
+        (isSelected
+          ? "bg-blue-600 ring-2 ring-white z-20"
+          : "bg-blue-500/70 z-10")
+      }
       style={{
-        height,
-        left: visibleStart * pixelsPerSecond,
-        width: visibleDuration * pixelsPerSecond,
+        left: group.start * pixelsPerSecond,
+        width: (group.end - group.start) * pixelsPerSecond,
       }}
-      onMouseDown={onDragStart}
+      onMouseDown={(e) => {
+        setSelectedGroupId(group.id);
+        onDragStart(e);
+      }}
     >
       {/* resize left */}
       <div

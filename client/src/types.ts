@@ -108,6 +108,9 @@ export interface ITimelineStore {
   updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
   removeGroup: (id: string) => void;
 
+  selectedGroupId: string | null;
+  setSelectedGroupId: (id: string | null) => void;
+
   /* ===== playback ===== */
   currentTime: number;
   setCurrentTime: (t: number) => void;
@@ -118,7 +121,7 @@ export interface ITimelineStore {
   zoom: number;
   setZoom: (z: number) => void;
 
-  /* ===== GROUP MANIPULATION (with constraints) ===== */
+  /* ===== GROUP MANIPULATION ===== */
   updateGroupDrag: (id: string, wantedStart: number) => void;
   updateGroupResizeLeft: (id: string, wantedStart: number) => void;
   updateGroupResizeRight: (id: string, wantedEnd: number) => void;
