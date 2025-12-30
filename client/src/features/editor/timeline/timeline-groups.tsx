@@ -10,10 +10,11 @@ interface Props {
   height: number;
 }
 
-export default function TimelineGroups({ pixelsPerSecond, height }: Props) {
+export default function TimelineGroups({
+  pixelsPerSecond,
+  height,
+}: Props) {
   const groups = useStore((s) => s.groups);
-  const selectedGroupId = useStore((s) => s.selectedGroupId);
-  const setSelectedGroupId = useStore((s) => s.setSelectedGroupId);
   const playGroup = useStore((s) => s.playGroup);
 
   if (!groups.length) return null;
@@ -23,14 +24,9 @@ export default function TimelineGroups({ pixelsPerSecond, height }: Props) {
       {groups.map((group: TimelineGroup) => (
         <div
           key={group.id}
-          className={`relative pointer-events-auto ${
-            selectedGroupId === group.id
-              ? "outline outline-2 outline-white"
-              : ""
-          }`}
+          className="relative pointer-events-auto"
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedGroupId(group.id);
             playGroup(group.id);
           }}
         >
