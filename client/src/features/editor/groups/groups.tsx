@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useEditorStore } from "../store/use-editor-store";
 import useTimelineStore from "../store/use-store";
-import { mapApiGroupsToTimeline } from "./mapGroups";
+import { mapApiGroupsToTimeline } from "../menu-item/mapGroups";
 import GroupsList from "./GroupsList";
 
 export default function Groups() {
