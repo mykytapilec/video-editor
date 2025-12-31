@@ -7,7 +7,6 @@ import React, { useEffect, useState } from "react";
 import { IBoxShadow, ICaption, ITrackItem } from "@designcombo/types";
 import Outline from "./common/outline";
 import Shadow from "./common/shadow";
-import CaptionWords from "./common/caption-words";
 import CaptionColors from "./common/caption-colors";
 import { TextControls } from "./common/text";
 import { Animation, presets } from "../player/animated";
@@ -15,8 +14,6 @@ import { PresetName } from "../player/animated/presets";
 import { X } from "lucide-react";
 import { ICompactFont, IFont } from "../interfaces/editor";
 import { DEFAULT_FONT } from "../constants/font";
-import { PresetCaption } from "./common/preset-caption";
-import AnimationCaption from "./common/animation-caption";
 
 interface ITextControlProps {
   color: string;
@@ -402,21 +399,15 @@ const BasicCaption = ({
   const components = [
     {
       key: "captionPreset",
-      component: <PresetCaption trackItem={trackItem} properties={properties} />
+      component: null,
     },
     {
       key: "captionWords",
-      component: (
-        <CaptionWords
-          id={trackItem.id}
-          handleModalAnimation={handleModalAnimation}
-          trackItem={trackItem}
-        />
-      )
+      component: null,
     },
     {
       key: "animations",
-      component: <AnimationCaption />
+      component: null,
     },
     {
       key: "captionColors",

@@ -15,7 +15,6 @@ export default function TimelineGroups({
   height,
 }: Props) {
   const groups = useTimelineStore((s) => s.groups);
-  const playGroup = useTimelineStore((s) => s.playGroup);
 
   if (!groups.length) return null;
 
@@ -25,10 +24,6 @@ export default function TimelineGroups({
         <div
           key={group.id}
           className="relative pointer-events-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            playGroup(group.id);
-          }}
         >
           <TimelineGroupBlock
             group={group}

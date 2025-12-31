@@ -11,7 +11,6 @@ import { TextControls } from "./common/text";
 import { ICompactFont, IFont } from "../interfaces/editor";
 import { DEFAULT_FONT } from "../constants/font";
 import { PresetText } from "./common/preset-text";
-import { Animations } from "./common/animations";
 
 interface ITextControlProps {
   color: string;
@@ -360,7 +359,7 @@ const BasicText = ({
     },
     {
       key: "animations",
-      component: <Animations trackItem={trackItem} properties={properties} />
+      component: null,
     },
     {
       key: "fontStroke",

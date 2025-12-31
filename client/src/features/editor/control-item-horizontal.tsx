@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import useStore from "./store/use-store";
+import React, { useEffect, useState } from "react";
 import {
   IAudio,
   ICaption,
@@ -24,6 +23,7 @@ import { dispatch } from "@designcombo/events";
 import { EDIT_OBJECT } from "@designcombo/state";
 import { Label } from "@/components/ui/label";
 import { convertToITrackItem } from "@/utils/convertToITrackItem";
+import useTimelineStore from "./store/use-timeline-store";
 
 const ActiveControlItem = ({
   trackItem,
@@ -559,153 +559,9 @@ const ControlItem = ({
 };
 
 export default function ControlItemHorizontal() {
-  const { activeId, trackItemsMap, transitionsMap } = useStore();
-  const [trackItem, setTrackItem] = useState<ITrackItem | null>(null);
-  const { setTrackItem: setLayoutTrackItem } = useLayoutStore();
-  const isLargeScreen = useIsLargeScreen();
-  const {
-    setTypeControlItem,
-    typeControlItem,
-    setControItemDrawerOpen,
-    controItemDrawerOpen,
-    setLabelControlItem
-  } = useLayoutStore();
-
-  // Framer Motion controls
-  const controls = useAnimation();
-
-  useEffect(() => {
-    if (activeId) {
-      const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
-      if (iTrackItem) {
-        setTrackItem(iTrackItem);
-        setLayoutTrackItem(iTrackItem);
-      } else console.log(transitionsMap[activeId]);
-    } else {
-      setTrackItem(null);
-      setLayoutTrackItem(null);
-    }
-  }, [activeId, trackItemsMap]);
-  const handleMenuItemClick = (menuItem: string, label: string) => {
-    if (!isLargeScreen) {
-      setControItemDrawerOpen(true);
-      setTypeControlItem(menuItem);
-      setLabelControlItem(label);
-    }
-  };
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-
-      const clickedOutsideDrawer =
-        drawerRef.current && !drawerRef.current.contains(target);
-      const clickedOutsideScrollArea =
-        scrollAreaRef.current && !scrollAreaRef.current.contains(target);
-
-      if (clickedOutsideDrawer && clickedOutsideScrollArea) {
-        setControItemDrawerOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Handle drag end with Framer Motion
-  const handleDragEnd = (event: any, info: PanInfo) => {
-    const { offset, velocity } = info;
-
-    // Close drawer if dragged down more than 50px or with sufficient velocity
-    if (offset.y > 50 || velocity.y > 500) {
-      setControItemDrawerOpen(false);
-    } else {
-      // Animate back to original position
-      controls.start({
-        y: 0,
-        transition: { type: "spring", damping: 25, stiffness: 300 }
-      });
-    }
-  };
-
-  // Animation variants
-  const drawerVariants = {
-    hidden: { y: "100%" },
-    visible: {
-      y: 0,
-      transition: {
-        type: "spring",
-        damping: 25,
-        stiffness: 300,
-        duration: 0.3
-      }
-    },
-    exit: {
-      y: "100%",
-      transition: {
-        type: "spring",
-        damping: 25,
-        stiffness: 300,
-        duration: 0.2
-      }
-    }
-  };
-
-  return (
-    <>
-      <div className="flex h-12 items-center border-t">
-        <ScrollArea className="w-full px-2" ref={scrollAreaRef}>
-          {trackItem && (
-            <ActiveControlItem
-              trackItem={trackItem as ITrackItem & any}
-              handleMenuItemClick={handleMenuItemClick}
-            />
-          )}
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
-      {!isLargeScreen && controItemDrawerOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end pointer-events-none"
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          variants={drawerVariants}
-        >
-          <motion.div
-            ref={drawerRef}
-            className="bg-background mb-12 w-full max-h-[80vh] min-h-[340px] rounded-t-lg border-t shadow-lg pointer-events-auto"
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.1}
-            onDragEnd={handleDragEnd}
-            animate={controls}
-            whileDrag={{ scale: 0.98 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
-            <div className="flex flex-col h-full">
-              <motion.div
-                className="flex items-center justify-center p-4 cursor-grab active:cursor-grabbing touch-none"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div className="h-1 w-24 bg-zinc-700 rounded-full" />
-              </motion.div>
-              <div className="flex-1 overflow-auto">
-                <ControlItem
-                  trackItem={trackItem as ITrackItem & any}
-                  feature={typeControlItem}
-                />
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </>
-  );
+  return null;
 }
+
 type Item = {
   icon: React.ComponentType<{ width: number }>;
   label: string;

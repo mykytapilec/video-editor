@@ -14,7 +14,6 @@ import Blur from "./common/blur";
 import Brightness from "./common/brightness";
 import useLayoutStore from "../store/use-layout-store";
 import { Label } from "@/components/ui/label";
-import { Animations } from "./common/animations";
 
 const BasicImage = ({
   trackItem,
@@ -223,7 +222,7 @@ const BasicImage = ({
     },
     {
       key: "animations",
-      component: <Animations trackItem={trackItem} properties={properties} />
+      component: null
     },
 
     {

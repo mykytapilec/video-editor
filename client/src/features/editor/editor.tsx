@@ -7,11 +7,9 @@ import StateManager from "@designcombo/state";
 import MenuList from "./menu-list";
 import { MenuItem } from "./menu-item/menu-item";
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
-import FloatingControl from "./control-item/floating-controls/floating-control";
 import CropModal from "./crop-modal/crop-modal";
 import MenuListHorizontal from "./menu-list-horizontal";
 import ControlItemHorizontal from "./control-item-horizontal";
-import { ControlItem } from "./control-item";
 import useLayoutStore from "./store/use-layout-store";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
 import { TrackItem } from "@/types";
@@ -32,7 +30,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
   const [trackItem, setTrackItem] = useState<TrackItem | null>(null);
 
   const {
-    setTrackItem: setLayoutTrackItem,
     setFloatingControl,
     setLabelControlItem,
     setTypeControlItem,
@@ -77,7 +74,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
 
         <ResizablePanelGroup style={{ flex: 1 }} direction="vertical">
           <ResizablePanel className="relative" defaultSize={70}>
-            <FloatingControl />
             <div className="flex h-full flex-1">
               <div
                 style={{
@@ -103,8 +99,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
           {!isLargeScreen && !trackItem && <MenuListHorizontal />}
           {!isLargeScreen && trackItem && <ControlItemHorizontal />}
         </ResizablePanelGroup>
-
-        <ControlItem />
       </div>
     </div>
   );

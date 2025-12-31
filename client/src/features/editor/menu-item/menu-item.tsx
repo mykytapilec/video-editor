@@ -5,7 +5,6 @@ import { Audios } from "./audios";
 import { Elements } from "./elements";
 import { Images } from "./images";
 import { Videos } from "./videos";
-import { Captions } from "./captions";
 import { VoiceOver } from "./voice-over";
 import Groups from "../groups/groups";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
@@ -27,14 +26,9 @@ const ActiveMenuItem = () => {
   if (activeMenuItem === "videos") {
     return <Videos />;
   }
-  if (activeMenuItem === "captions") {
-    return <Captions />;
-  }
-
   if (activeMenuItem === "audios") {
     return <Audios />;
   }
-
   if (activeMenuItem === "images") {
     return <Images />;
   }
