@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect, useState, useRef } from "react";
-import useStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 import useThumbnails from "../hooks/use-thumbnails";
 import { useEditorStore } from "../store/use-editor-store";
 
@@ -12,7 +12,7 @@ interface Props {
 
 export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
   const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
-  const videoDuration = useStore((s) => s.videoDuration) || 1;
+  const videoDuration = useTimelineStore((s) => s.videoDuration) || 1;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibleStart, setVisibleStart] = useState(0);

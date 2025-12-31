@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import useStore from "./store/use-store";
 import Navbar from "./navbar";
 import Scene from "./scene/scene";
 import StateManager from "@designcombo/state";
@@ -16,7 +15,6 @@ import { ControlItem } from "./control-item";
 import useLayoutStore from "./store/use-layout-store";
 import { useIsLargeScreen } from "@/hooks/use-media-query";
 import { TrackItem } from "@/types";
-import { convertToITrackItem } from "@/utils/convertToITrackItem";
 import Timeline from "./timeline/timeline";
 import { SceneRef } from "./scene/scene.types";
 
@@ -41,18 +39,6 @@ const Editor: React.FC<{ tempId?: string; id?: string }> = ({ tempId, id }) => {
   } = useLayoutStore();
 
   const isLargeScreen = useIsLargeScreen();
-
-  // useEffect(() => {
-  //   if (activeId) {
-  //     setTrackItem(trackItemsMap);
-
-  //     const iTrackItem = trackItemsMap ? convertToITrackItem(trackItemsMap) : null;
-  //     setLayoutTrackItem?.(iTrackItem);
-  //   } else {
-  //     setTrackItem(null);
-  //     setLayoutTrackItem?.(null);
-  //   }
-  // }, [activeId, trackItemsMap, setLayoutTrackItem]);
 
   useEffect(() => {
     setFloatingControl?.("");

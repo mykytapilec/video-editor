@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useEditorStore } from "../store/use-editor-store";
-import useTimelineStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 import { mapApiGroupsToTimeline } from "../menu-item/mapGroups";
 import GroupsList from "./GroupsList";
 

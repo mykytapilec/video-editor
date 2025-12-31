@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import useStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 
 interface NativePlayerProps {
   src: string | null;
@@ -20,8 +20,8 @@ const NativePlayer: React.FC<NativePlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const setVideoDuration = useStore((s) => s.setVideoDuration);
-  const setPlayerRef = useStore((s) => s.setPlayerRef);
+  const setVideoDuration = useTimelineStore((s) => s.setVideoDuration);
+  const setPlayerRef = useTimelineStore((s) => s.setPlayerRef);
 
   useEffect(() => {
     // register videoRef in store so Timeline (and others) can control it

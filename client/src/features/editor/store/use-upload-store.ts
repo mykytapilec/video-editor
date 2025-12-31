@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import { UploadFile } from "@/types";
-import useStore from "./use-store";
 import { normalizeVideoUrl } from "@/utils/normalize-url";
 import { useEditorStore } from "./use-editor-store";
 

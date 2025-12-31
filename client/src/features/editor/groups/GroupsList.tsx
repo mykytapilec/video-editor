@@ -1,7 +1,7 @@
 "use client";
 
 import { useEditorStore } from "../store/use-editor-store";
-import useTimelineStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -11,10 +11,8 @@ function formatTime(sec: number) {
 
 export default function GroupsList() {
   const groups = useEditorStore((s) => s.groups);
+  const setSelectedGroupId = useTimelineStore((s) => s.setSelectedGroupId);
 
-  const setSelectedGroupId = useTimelineStore(
-    (s) => s.setSelectedGroupId
-  );
   const playGroup = useTimelineStore((s) => s.playGroup);
 
   if (!groups || groups.length === 0) {
@@ -68,6 +66,7 @@ export default function GroupsList() {
                 className="hover:text-white"
                 onClick={() => {
                   setSelectedGroupId(String(g.id));
+                  setSelectedGroupId(String(g.id))
                 }}
               >
                 ✏ Edit

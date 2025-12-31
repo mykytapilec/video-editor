@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { VideoTrackItem } from "@/types";
-import useStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 import useThumbnails from "@/features/editor/hooks/use-thumbnails";
 
 interface Props {
@@ -21,7 +21,7 @@ const formatTime = (sec: number) => {
 };
 
 export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep }) => {
-  const videoDuration = useStore((s) => s.videoDuration) || 1;
+  const videoDuration = useTimelineStore((s) => s.videoDuration) || 1;
 
   const [isDragging, setIsDragging] = useState(false);
   const [isLeftResize, setIsLeftResize] = useState(false);
@@ -67,7 +67,6 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         if (newStart < 0) newStart = 0;
         if (newStart > end - minLen) newStart = end - minLen;
         timelineStart = Math.min(Math.max(0, timelineStart + (newStart - start)), videoDur - (end - newStart));
-        // updateTrackItem({ trim: { ...curTrim, start: newStart }, timelineStart });
         return;
       }
 
@@ -75,7 +74,6 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         let newEnd = snap(end + deltaSec);
         if (newEnd > videoDur) newEnd = videoDur;
         if (newEnd < start + minLen) newEnd = start + minLen;
-        // updateTrackItem({ trim: { ...curTrim, end: newEnd } });
         return;
       }
 
@@ -85,7 +83,6 @@ export const TimelineBlock: React.FC<Props> = ({ item, pixelsPerSecond, snapStep
         if (newTimelineStart + (end - start) > videoDur) {
           newTimelineStart = videoDur - (end - start);
         }
-        // updateTrackItem({ timelineStart: newTimelineStart });
       }
     };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import useTimelineStore from "@/features/editor/store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 
 import TimelineRuler from "./timeline-ruler";
 import TimelineBackground from "./timeline-background";

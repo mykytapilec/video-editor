@@ -2,8 +2,8 @@
 
 import React from "react";
 import { TimelineGroupBlock } from "./timeline-group-block";
-import useStore from "../store/use-store";
 import { TimelineGroup } from "@/types";
+import useTimelineStore from "../store/use-timeline-store";
 
 interface Props {
   pixelsPerSecond: number;
@@ -14,8 +14,8 @@ export default function TimelineGroups({
   pixelsPerSecond,
   height,
 }: Props) {
-  const groups = useStore((s) => s.groups);
-  const playGroup = useStore((s) => s.playGroup);
+  const groups = useTimelineStore((s) => s.groups);
+  const playGroup = useTimelineStore((s) => s.playGroup);
 
   if (!groups.length) return null;
 

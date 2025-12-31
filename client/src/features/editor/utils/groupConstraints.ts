@@ -18,51 +18,70 @@ export function getNeighborBounds(
   const next = index < sorted.length - 1 ? sorted[index + 1] : null;
 
   return {
+    prev,
+    next,
     minStart: prev ? prev.end : 0,
     maxEnd: next ? next.start : timelineDuration,
   };
 }
 
+/* ===== DRAG ===== */
 export function constrainGroupDrag(
   groups: TimelineGroup[],
-  groupId: string,
+  group: TimelineGroup,
   wantedStart: number,
   timelineDuration: number
 ) {
-  const group = groups.find((g) => g.id === groupId);
-  if (!group) return 0;
+  const { prev, next } = getNeighborBounds(
+    groups,
+    group.id,
+    timelineDuration
+  );
 
-  const { minStart, maxEnd } = getNeighborBounds(groups, groupId, timelineDuration);
-  const clamped = clamp(wantedStart, minStart, maxEnd - MIN_GROUP_DURATION);
-  return clamped;
+  const duration = group.end - group.start;
+
+  const minStart = prev ? prev.end : 0;
+  const maxStart = next
+    ? next.start - duration
+    : timelineDuration - duration;
+
+  return clamp(wantedStart, minStart, maxStart);
 }
 
-export function constrainGroupResizeLeft(
+/* ===== RESIZE LEFT ===== */
+export function constrainResizeLeft(
   groups: TimelineGroup[],
-  groupId: string,
+  group: TimelineGroup,
   wantedStart: number,
   timelineDuration: number
 ) {
-  const group = groups.find((g) => g.id === groupId);
-  if (!group) return 0;
+  const { prev } = getNeighborBounds(
+    groups,
+    group.id,
+    timelineDuration
+  );
 
-  const { minStart } = getNeighborBounds(groups, groupId, timelineDuration);
+  const minStart = prev ? prev.end : 0;
   const maxStart = group.end - MIN_GROUP_DURATION;
 
   return clamp(wantedStart, minStart, maxStart);
 }
 
-export function constrainGroupResizeRight(
+/* ===== RESIZE RIGHT ===== */
+export function constrainResizeRight(
   groups: TimelineGroup[],
-  groupId: string,
+  group: TimelineGroup,
   wantedEnd: number,
   timelineDuration: number
 ) {
-  const group = groups.find((g) => g.id === groupId);
-  if (!group) return timelineDuration;
+  const { next } = getNeighborBounds(
+    groups,
+    group.id,
+    timelineDuration
+  );
 
-  const { maxEnd } = getNeighborBounds(groups, groupId, timelineDuration);
   const minEnd = group.start + MIN_GROUP_DURATION;
+  const maxEnd = next ? next.start : timelineDuration;
 
   return clamp(wantedEnd, minEnd, maxEnd);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { forwardRef, useImperativeHandle } from "react";
-import useStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 import NativePlayer from "../components/NativePlayer";
 import { useEditorStore } from "../store/use-editor-store";
 
@@ -9,8 +9,8 @@ export type SceneRef = { recalculateZoom: () => void };
 
 const Scene = forwardRef<SceneRef>((_, ref) => {
   const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
-  const currentTime = useStore((s) => s.currentTime);
-  const setCurrentTime = useStore((s) => s.setCurrentTime);
+  const currentTime = useTimelineStore((s) => s.currentTime);
+  const setCurrentTime = useTimelineStore((s) => s.setCurrentTime);
 
   useImperativeHandle(ref, () => ({
     recalculateZoom: () => {}

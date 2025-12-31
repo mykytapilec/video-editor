@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { TimelineGroup } from "@/types";
-import useStore from "../store/use-store";
+import useTimelineStore from "../store/use-timeline-store";
 
 type Props = {
   group: TimelineGroup;
@@ -10,17 +10,13 @@ type Props = {
   height: number;
 };
 
-export function TimelineGroupBlock({
-  group,
-  pixelsPerSecond,
-  height,
-}: Props) {
-  const videoDuration = useStore((s) => s.videoDuration);
-  const selectedGroupId = useStore((s) => s.selectedGroupId);
+export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
+  const videoDuration = useTimelineStore((s) => s.videoDuration);
+  const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
 
-  const drag = useStore((s) => s.updateGroupDrag);
-  const resizeLeft = useStore((s) => s.updateGroupResizeLeft);
-  const resizeRight = useStore((s) => s.updateGroupResizeRight);
+  const drag = useTimelineStore((s) => s.updateGroupDrag);
+  const resizeLeft = useTimelineStore((s) => s.updateGroupResizeLeft);
+  const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
   const isSelected = selectedGroupId === group.id;
 
@@ -31,14 +27,12 @@ export function TimelineGroupBlock({
   const startAtResize = useRef(0);
   const endAtResize = useRef(0);
 
-  /* ===== UI CLIPPING ===== */
   const visibleStart = Math.max(0, group.start);
   const visibleEnd = Math.min(group.end, videoDuration);
   const visibleDuration = visibleEnd - visibleStart;
 
   if (visibleDuration <= 0) return null;
 
-  /* ===== DRAG ===== */
   const onDragStart = (e: React.MouseEvent) => {
     if (!isSelected) return;
 
@@ -59,7 +53,6 @@ export function TimelineGroupBlock({
     window.addEventListener("mouseup", up);
   };
 
-  /* ===== RESIZE ===== */
   const onResizeLeft = (e: React.MouseEvent) => {
     if (!isSelected) return;
 
@@ -104,12 +97,12 @@ export function TimelineGroupBlock({
 
   return (
     <div
-      className={
-        "absolute top-0 rounded select-none " +
-        (isSelected
-          ? "bg-blue-600 ring-2 ring-white z-20 cursor-grab"
-          : "bg-blue-500/70 z-10 cursor-default")
-      }
+      className={[
+        "absolute top-0 h-full rounded select-none",
+        isSelected
+          ? "bg-blue-600 z-20 cursor-grab ring-2 ring-white"
+          : "bg-blue-500/40 z-10 pointer-events-none",
+      ].join(" ")}
       style={{
         left: group.start * pixelsPerSecond,
         width: (group.end - group.start) * pixelsPerSecond,
@@ -117,20 +110,17 @@ export function TimelineGroupBlock({
       }}
       onMouseDown={onDragStart}
     >
-      {/* resize left */}
       {isSelected && (
-        <div
-          onMouseDown={onResizeLeft}
-          className="absolute left-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
-        />
-      )}
-
-      {/* resize right */}
-      {isSelected && (
-        <div
-          onMouseDown={onResizeRight}
-          className="absolute right-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
-        />
+        <>
+          <div
+            onMouseDown={onResizeLeft}
+            className="absolute left-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
+          />
+          <div
+            onMouseDown={onResizeRight}
+            className="absolute right-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
+          />
+        </>
       )}
     </div>
   );
