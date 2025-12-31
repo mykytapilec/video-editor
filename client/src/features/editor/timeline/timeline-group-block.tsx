@@ -10,15 +10,21 @@ type Props = {
   height: number;
 };
 
-export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
+export function TimelineGroupBlock({
+  group,
+  pixelsPerSecond,
+  height,
+}: Props) {
   const videoDuration = useTimelineStore((s) => s.videoDuration);
   const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
+  const editingGroupId = useTimelineStore((s) => s.editingGroupId);
 
-  const drag = useTimelineStore((s) => s.updateGroupDrag);
+  const updateDrag = useTimelineStore((s) => s.updateGroupDrag);
   const resizeLeft = useTimelineStore((s) => s.updateGroupResizeLeft);
   const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
   const isSelected = selectedGroupId === group.id;
+  const isEditing = editingGroupId === group.id;
 
   const dragStartX = useRef(0);
   const startAtDrag = useRef(0);
@@ -29,19 +35,19 @@ export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
 
   const visibleStart = Math.max(0, group.start);
   const visibleEnd = Math.min(group.end, videoDuration);
-  const visibleDuration = visibleEnd - visibleStart;
-
-  if (visibleDuration <= 0) return null;
+  if (visibleEnd - visibleStart <= 0) return null;
 
   const onDragStart = (e: React.MouseEvent) => {
-    if (!isSelected) return;
+    if (!isEditing) return;
+    e.stopPropagation();
 
     dragStartX.current = e.clientX;
     startAtDrag.current = group.start;
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - dragStartX.current;
-      drag(group.id, startAtDrag.current + dx / pixelsPerSecond);
+      const wantedStart = startAtDrag.current + dx / pixelsPerSecond;
+      updateDrag(group.id, wantedStart);
     };
 
     const up = () => {
@@ -54,15 +60,16 @@ export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
   };
 
   const onResizeLeft = (e: React.MouseEvent) => {
-    if (!isSelected) return;
-
+    if (!isEditing) return;
     e.stopPropagation();
+
     resizeStartX.current = e.clientX;
     startAtResize.current = group.start;
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - resizeStartX.current;
-      resizeLeft(group.id, startAtResize.current + dx / pixelsPerSecond);
+      const wantedStart = startAtResize.current + dx / pixelsPerSecond;
+      resizeLeft(group.id, wantedStart);
     };
 
     const up = () => {
@@ -75,15 +82,16 @@ export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
   };
 
   const onResizeRight = (e: React.MouseEvent) => {
-    if (!isSelected) return;
-
+    if (!isEditing) return;
     e.stopPropagation();
+
     resizeStartX.current = e.clientX;
     endAtResize.current = group.end;
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - resizeStartX.current;
-      resizeRight(group.id, endAtResize.current + dx / pixelsPerSecond);
+      const wantedEnd = endAtResize.current + dx / pixelsPerSecond;
+      resizeRight(group.id, wantedEnd);
     };
 
     const up = () => {
@@ -97,20 +105,22 @@ export function TimelineGroupBlock({ group, pixelsPerSecond, height }: Props) {
 
   return (
     <div
-      className={[
-        "absolute top-0 h-full rounded select-none",
-        isSelected
-          ? "bg-blue-600 z-20 cursor-grab ring-2 ring-white"
-          : "bg-blue-500/40 z-10 pointer-events-none",
-      ].join(" ")}
+      onMouseDown={onDragStart}
+      className={
+        "absolute top-0 rounded select-none " +
+        (isEditing
+          ? "bg-blue-600 ring-2 ring-white z-30 cursor-grab"
+          : isSelected
+          ? "bg-blue-500/80 ring-2 ring-blue-300 z-20"
+          : "bg-blue-500/40 z-10")
+      }
       style={{
         left: group.start * pixelsPerSecond,
         width: (group.end - group.start) * pixelsPerSecond,
         height,
       }}
-      onMouseDown={onDragStart}
     >
-      {isSelected && (
+      {isEditing && (
         <>
           <div
             onMouseDown={onResizeLeft}
