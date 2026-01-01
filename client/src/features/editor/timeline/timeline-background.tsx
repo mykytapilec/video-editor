@@ -12,7 +12,7 @@ interface Props {
 
 export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
   const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
-  const videoDuration = useTimelineStore((s) => s.videoDuration) || 1;
+  const videoDuration = useTimelineStore((s) => s.videoDuration);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibleStart, setVisibleStart] = useState(0);
@@ -23,46 +23,64 @@ export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
 
   useEffect(() => {
     const handle = () => {
-      if (scrollRef.current) {
-        setVisibleStart(scrollRef.current.scrollLeft / pixelsPerSecond);
-        setVisibleWidth(scrollRef.current.clientWidth);
-      }
+      if (!scrollRef.current) return;
+      setVisibleStart(scrollRef.current.scrollLeft / pixelsPerSecond);
+      setVisibleWidth(scrollRef.current.clientWidth || 1);
     };
 
     handle();
     window.addEventListener("resize", handle);
-    if (scrollRef.current) scrollRef.current.addEventListener("scroll", handle);
+    scrollRef.current?.addEventListener("scroll", handle);
 
     return () => {
       window.removeEventListener("resize", handle);
-      if (scrollRef.current) scrollRef.current.removeEventListener("scroll", handle);
+      scrollRef.current?.removeEventListener("scroll", handle);
     };
   }, [pixelsPerSecond]);
 
-  const thumbsCount = Math.min(
-    Math.ceil(visibleWidth / thumbWidthPx),
-    maxThumbs
-  );
+  const thumbsCount = useMemo(() => {
+    if (!visibleWidth) return 1;
+    return Math.min(
+      Math.max(1, Math.ceil(visibleWidth / thumbWidthPx)),
+      maxThumbs
+    );
+  }, [visibleWidth]);
 
   const times = useMemo(() => {
+    if (!videoDuration || !thumbsCount) return [];
     const arr: number[] = [];
+
     for (let i = 0; i < thumbsCount; i++) {
       const t =
         visibleStart +
-        (i / Math.max(1, thumbsCount - 1)) * (visibleWidth / pixelsPerSecond);
+        (i / Math.max(1, thumbsCount - 1)) *
+          (visibleWidth / pixelsPerSecond);
+
       arr.push(Math.min(t, videoDuration));
     }
+
     return arr;
-  }, [visibleStart, visibleWidth, thumbsCount, pixelsPerSecond, videoDuration]);
+  }, [
+    visibleStart,
+    visibleWidth,
+    thumbsCount,
+    pixelsPerSecond,
+    videoDuration,
+  ]);
 
-  const { thumbs, loading } = useThumbnails("background", currentVideoSrc, times, {
-    width: thumbWidthPx,
-    height,
-    maxThumbs,
-    crossOrigin: "anonymous",
-  });
+  const { thumbs, loading } = useThumbnails(
+    videoDuration ? "background" : undefined,
+    currentVideoSrc,
+    times,
+    {
+      width: thumbWidthPx,
+      height,
+      maxThumbs,
+      crossOrigin: "anonymous",
+    }
+  );
 
-  const width = videoDuration * pixelsPerSecond;
+  const width = (videoDuration || 1) * pixelsPerSecond;
 
   return (
     <div
@@ -71,8 +89,8 @@ export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
       style={{ width, height }}
     >
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
-          Loading...
+        <div className="absolute inset-0 flex items-center justify-center text-white text-xs">
+          Loading timeline preview…
         </div>
       )}
 
@@ -83,9 +101,8 @@ export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
               <img
                 key={i}
                 src={src}
-                className="object-cover filter grayscale"
-                style={{ width: `${100 / thumbsCount}%`, height: "100%" }}
-                alt={`thumb-${i}`}
+                className="object-cover grayscale"
+                style={{ width: `${100 / thumbs.length}%`, height: "100%" }}
                 draggable={false}
               />
             ) : (

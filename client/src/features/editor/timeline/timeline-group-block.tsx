@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { TimelineGroup } from "@/types";
 import useTimelineStore from "../store/use-timeline-store";
+import useThumbnails from "../hooks/use-thumbnails";
+import { useEditorStore } from "../store/use-editor-store";
 
 type Props = {
   group: TimelineGroup;
@@ -23,6 +25,8 @@ export function TimelineGroupBlock({
   const resizeLeft = useTimelineStore((s) => s.updateGroupResizeLeft);
   const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
+  const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
+
   const isActive = selectedGroupId === group.id;
 
   const dragStartX = useRef(0);
@@ -36,6 +40,33 @@ export function TimelineGroupBlock({
   const visibleEnd = Math.min(group.end, videoDuration);
   if (visibleEnd - visibleStart <= 0) return null;
 
+  const widthPx = (group.end - group.start) * pixelsPerSecond;
+
+  const thumbsCount = Math.max(1, Math.floor(widthPx / 120));
+
+  const times = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < thumbsCount; i++) {
+      const t =
+        group.start +
+        (i / Math.max(1, thumbsCount - 1)) * (group.end - group.start);
+      arr.push(t);
+    }
+    return arr;
+  }, [group.start, group.end, thumbsCount]);
+
+  const { thumbs } = useThumbnails(
+    isActive ? group.id : undefined,
+    currentVideoSrc,
+    times,
+    {
+      width: 120,
+      height,
+      maxThumbs: 12,
+      crossOrigin: "anonymous",
+    }
+  );
+
   const onDragStart = (e: React.MouseEvent) => {
     if (!isActive) return;
     e.stopPropagation();
@@ -45,8 +76,7 @@ export function TimelineGroupBlock({
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - dragStartX.current;
-      const wantedStart = startAtDrag.current + dx / pixelsPerSecond;
-      updateDrag(group.id, wantedStart);
+      updateDrag(group.id, startAtDrag.current + dx / pixelsPerSecond);
     };
 
     const up = () => {
@@ -67,8 +97,7 @@ export function TimelineGroupBlock({
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - resizeStartX.current;
-      const wantedStart = startAtResize.current + dx / pixelsPerSecond;
-      resizeLeft(group.id, wantedStart);
+      resizeLeft(group.id, startAtResize.current + dx / pixelsPerSecond);
     };
 
     const up = () => {
@@ -89,8 +118,7 @@ export function TimelineGroupBlock({
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - resizeStartX.current;
-      const wantedEnd = endAtResize.current + dx / pixelsPerSecond;
-      resizeRight(group.id, wantedEnd);
+      resizeRight(group.id, endAtResize.current + dx / pixelsPerSecond);
     };
 
     const up = () => {
@@ -109,27 +137,44 @@ export function TimelineGroupBlock({
         selectGroup(group.id);
         onDragStart(e);
       }}
-      className={
-        "absolute top-0 rounded select-none cursor-grab " +
-        (isActive
-          ? "bg-blue-600 ring-2 ring-white z-30"
-          : "bg-blue-500/40 z-10")
-      }
+      className="absolute top-0 rounded select-none cursor-grab"
       style={{
         left: group.start * pixelsPerSecond,
-        width: (group.end - group.start) * pixelsPerSecond,
+        width: widthPx,
         height,
+        backgroundColor: isActive ? "transparent" : "rgba(96,165,250,0.25)",
+        border: isActive ? "1px solid rgba(255,255,255,0.9)" : "none",
+        zIndex: isActive ? 30 : 10,
       }}
     >
+      {isActive && thumbs && thumbs.length > 0 && (
+        <div className="absolute inset-0 flex h-full z-10 pointer-events-none">
+          {thumbs.map((src, i) =>
+            src ? (
+              <img
+                key={i}
+                src={src}
+                className="object-cover"
+                style={{ width: `${100 / thumbs.length}%`, height: "100%" }}
+                draggable={false}
+              />
+            ) : (
+              <div key={i} className="flex-1 bg-gray-800" />
+            )
+          )}
+        </div>
+      )}
       {isActive && (
         <>
           <div
             onMouseDown={onResizeLeft}
-            className="absolute left-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
+            className="absolute left-0 top-0 h-full w-2 cursor-ew-resize
+                       bg-black/40 z-30"
           />
           <div
             onMouseDown={onResizeRight}
-            className="absolute right-0 top-0 h-full w-2 cursor-ew-resize bg-black/30"
+            className="absolute right-0 top-0 h-full w-2 cursor-ew-resize
+                       bg-black/40 z-30"
           />
         </>
       )}
