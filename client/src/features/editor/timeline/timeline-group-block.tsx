@@ -17,14 +17,13 @@ export function TimelineGroupBlock({
 }: Props) {
   const videoDuration = useTimelineStore((s) => s.videoDuration);
   const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
-  const editingGroupId = useTimelineStore((s) => s.editingGroupId);
+  const selectGroup = useTimelineStore((s) => s.selectGroup);
 
   const updateDrag = useTimelineStore((s) => s.updateGroupDrag);
   const resizeLeft = useTimelineStore((s) => s.updateGroupResizeLeft);
   const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
-  const isSelected = selectedGroupId === group.id;
-  const isEditing = editingGroupId === group.id;
+  const isActive = selectedGroupId === group.id;
 
   const dragStartX = useRef(0);
   const startAtDrag = useRef(0);
@@ -38,7 +37,7 @@ export function TimelineGroupBlock({
   if (visibleEnd - visibleStart <= 0) return null;
 
   const onDragStart = (e: React.MouseEvent) => {
-    if (!isEditing) return;
+    if (!isActive) return;
     e.stopPropagation();
 
     dragStartX.current = e.clientX;
@@ -60,7 +59,7 @@ export function TimelineGroupBlock({
   };
 
   const onResizeLeft = (e: React.MouseEvent) => {
-    if (!isEditing) return;
+    if (!isActive) return;
     e.stopPropagation();
 
     resizeStartX.current = e.clientX;
@@ -82,7 +81,7 @@ export function TimelineGroupBlock({
   };
 
   const onResizeRight = (e: React.MouseEvent) => {
-    if (!isEditing) return;
+    if (!isActive) return;
     e.stopPropagation();
 
     resizeStartX.current = e.clientX;
@@ -105,13 +104,15 @@ export function TimelineGroupBlock({
 
   return (
     <div
-      onMouseDown={onDragStart}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        selectGroup(group.id);
+        onDragStart(e);
+      }}
       className={
-        "absolute top-0 rounded select-none " +
-        (isEditing
-          ? "bg-blue-600 ring-2 ring-white z-30 cursor-grab"
-          : isSelected
-          ? "bg-blue-500/80 ring-2 ring-blue-300 z-20"
+        "absolute top-0 rounded select-none cursor-grab " +
+        (isActive
+          ? "bg-blue-600 ring-2 ring-white z-30"
           : "bg-blue-500/40 z-10")
       }
       style={{
@@ -120,7 +121,7 @@ export function TimelineGroupBlock({
         height,
       }}
     >
-      {isEditing && (
+      {isActive && (
         <>
           <div
             onMouseDown={onResizeLeft}

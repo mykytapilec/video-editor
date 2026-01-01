@@ -15,10 +15,7 @@ export interface ITimelineStore {
   updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
 
   selectedGroupId: string | null;
-  setSelectedGroupId: (id: string | null) => void;
-
-  editingGroupId: string | null;
-  setEditingGroupId: (id: string | null) => void;
+  selectGroup: (id: string | null) => void;
 
   currentTime: number;
   setCurrentTime: (t: number) => void;
@@ -54,14 +51,16 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
     })),
 
   selectedGroupId: null,
-  setSelectedGroupId: (id) =>
-    set({
-      selectedGroupId: id,
-      editingGroupId: null, // selection ≠ edit
-    }),
+  selectGroup: (id) => {
+    const { groups, playerRef } = get();
+    const group = groups.find((g) => g.id === id);
 
-  editingGroupId: null,
-  setEditingGroupId: (id) => set({ editingGroupId: id }),
+    if (group && playerRef?.current) {
+      playerRef.current.currentTime = group.start;
+    }
+
+    set({ selectedGroupId: id });
+  },
 
   currentTime: 0,
   setCurrentTime: (t) => set({ currentTime: t }),
@@ -73,39 +72,31 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
   setZoom: (z) => set({ zoom: z }),
 
   updateGroupDrag: (id, wantedStart) =>
-  set((state) => {
-    const groups = [...state.groups].sort((a, b) => a.start - b.start);
-    const index = groups.findIndex((g) => g.id === id);
-    if (index === -1) return {};
+    set((state) => {
+      const groups = [...state.groups].sort((a, b) => a.start - b.start);
+      const index = groups.findIndex((g) => g.id === id);
+      if (index === -1) return {};
 
-    const group = groups[index];
-    const duration = group.end - group.start;
+      const group = groups[index];
+      const duration = group.end - group.start;
 
-    const prev = groups[index - 1];
-    const next = groups[index + 1];
+      const prev = groups[index - 1];
+      const next = groups[index + 1];
 
-    let start = wantedStart;
+      let start = wantedStart;
 
-    if (prev) {
-      start = Math.max(start, prev.end);
-    } else {
-      start = Math.max(start, 0);
-    }
+      if (prev) start = Math.max(start, prev.end);
+      else start = Math.max(start, 0);
 
-    if (next) {
-      start = Math.min(start, next.start - duration);
-    } else {
-      start = Math.min(start, state.videoDuration - duration);
-    }
+      if (next) start = Math.min(start, next.start - duration);
+      else start = Math.min(start, state.videoDuration - duration);
 
-    return {
-      groups: state.groups.map((g) =>
-        g.id === id
-          ? { ...g, start, end: start + duration }
-          : g
-      ),
-    };
-  }),
+      return {
+        groups: state.groups.map((g) =>
+          g.id === id ? { ...g, start, end: start + duration } : g
+        ),
+      };
+    }),
 
   updateGroupResizeLeft: (id, wantedStart) =>
     set((state) => {
@@ -120,11 +111,8 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
       let start = wantedStart;
 
-      if (prev) {
-        start = Math.max(start, prev.end);
-      } else {
-        start = Math.max(start, 0);
-      }
+      if (prev) start = Math.max(start, prev.end);
+      else start = Math.max(start, 0);
 
       start = Math.min(start, group.end - MIN_DURATION);
 
@@ -148,11 +136,8 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
       let end = wantedEnd;
 
-      if (next) {
-        end = Math.min(end, next.start);
-      } else {
-        end = Math.min(end, state.videoDuration);
-      }
+      if (next) end = Math.min(end, next.start);
+      else end = Math.min(end, state.videoDuration);
 
       end = Math.max(end, group.start + MIN_DURATION);
 

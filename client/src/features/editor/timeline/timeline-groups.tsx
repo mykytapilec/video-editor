@@ -16,8 +16,7 @@ export default function TimelineGroups({
 }: Props) {
   const groups = useTimelineStore((s) => s.groups);
   const videoDuration = useTimelineStore((s) => s.videoDuration);
-  const setSelectedGroupId = useTimelineStore((s) => s.setSelectedGroupId);
-  const seekToGroup = useTimelineStore((s) => s.seekToGroup);
+  const selectGroup = useTimelineStore((s) => s.selectGroup);
 
   if (!groups.length || !videoDuration) return null;
 
@@ -33,8 +32,7 @@ export default function TimelineGroups({
           className="relative pointer-events-auto"
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedGroupId(group.id);
-            seekToGroup(group.id);
+            selectGroup(group.id);
           }}
         >
           <TimelineGroupBlock
