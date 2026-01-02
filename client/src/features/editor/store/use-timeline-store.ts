@@ -2,15 +2,6 @@ import { create } from "zustand";
 import { TimelineGroup } from "@/types";
 import React from "react";
 
-type TimelineGroupWithOriginal = TimelineGroup & {
-  _original?: {
-    start: number;
-    end: number;
-    text?: string;
-    idx?: number;
-  };
-};
-
 export interface ITimelineStore {
   playerRef: React.RefObject<HTMLVideoElement | null> | null;
   setPlayerRef: (
@@ -19,9 +10,16 @@ export interface ITimelineStore {
 
   fps: number;
 
-  groups: TimelineGroupWithOriginal[];
+  groups: TimelineGroup[];
+  originalGroups: TimelineGroup[];
+
   setGroups: (groups: TimelineGroup[]) => void;
+  markGroupsAsOriginal: () => void;
+
   updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
+
+  isGroupDirty: (id: string) => boolean;
+  getGroupPatch: (id: string) => Partial<TimelineGroup> | null;
 
   selectedGroupId: string | null;
   selectGroup: (id: string | null) => void;
@@ -41,9 +39,6 @@ export interface ITimelineStore {
 
   seekToGroup: (groupId: string) => void;
   playGroup: (groupId: string) => void;
-
-  hasGroupChanges: (id: string) => boolean;
-  syncGroup: (id: string, serverGroup: TimelineGroup) => void;
 }
 
 const useTimelineStore = create<ITimelineStore>((set, get) => ({
@@ -53,18 +48,18 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
   fps: 30,
 
   groups: [],
+  originalGroups: [],
+
   setGroups: (groups) =>
     set({
-      groups: groups.map((g) => ({
-        ...g,
-        _original: {
-          start: g.start,
-          end: g.end,
-          text: g.text,
-          idx: (g as any).idx,
-        },
-      })),
+      groups,
+      originalGroups: structuredClone(groups),
     }),
+
+  markGroupsAsOriginal: () =>
+    set((state) => ({
+      originalGroups: structuredClone(state.groups),
+    })),
 
   updateGroup: (id, patch) =>
     set((state) => ({
@@ -72,6 +67,33 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
         g.id === id ? { ...g, ...patch } : g
       ),
     })),
+
+  isGroupDirty: (id) => {
+    const { groups, originalGroups } = get();
+    const g = groups.find((x) => x.id === id);
+    const o = originalGroups.find((x) => x.id === id);
+    if (!g || !o) return false;
+
+    return (
+      g.start !== o.start ||
+      g.end !== o.end ||
+      g.text !== o.text
+    );
+  },
+
+  getGroupPatch: (id) => {
+    const { groups, originalGroups } = get();
+    const g = groups.find((x) => x.id === id);
+    const o = originalGroups.find((x) => x.id === id);
+    if (!g || !o) return null;
+
+    const patch: Partial<TimelineGroup> = {};
+    if (g.start !== o.start) patch.start = g.start;
+    if (g.end !== o.end) patch.end = g.end;
+    if (g.text !== o.text) patch.text = g.text;
+
+    return Object.keys(patch).length ? patch : null;
+  },
 
   selectedGroupId: null,
   selectGroup: (id) => {
@@ -123,7 +145,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeLeft: (id, wantedStart) =>
     set((state) => {
-      const MIN_DURATION = 0.2;
+      const MIN = 0.2;
 
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => g.id === id);
@@ -137,7 +159,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       if (prev) start = Math.max(start, prev.end);
       else start = Math.max(start, 0);
 
-      start = Math.min(start, group.end - MIN_DURATION);
+      start = Math.min(start, group.end - MIN);
 
       return {
         groups: state.groups.map((g) =>
@@ -148,7 +170,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeRight: (id, wantedEnd) =>
     set((state) => {
-      const MIN_DURATION = 0.2;
+      const MIN = 0.2;
 
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => g.id === id);
@@ -162,7 +184,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       if (next) end = Math.min(end, next.start);
       else end = Math.min(end, state.videoDuration);
 
-      end = Math.max(end, group.start + MIN_DURATION);
+      end = Math.max(end, group.start + MIN);
 
       return {
         groups: state.groups.map((g) =>
@@ -187,35 +209,6 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
     playerRef.current.currentTime = group.start;
     playerRef.current.play();
   },
-
-  hasGroupChanges: (id) => {
-    const g = get().groups.find((g) => g.id === id);
-    if (!g || !g._original) return false;
-
-    return (
-      g.start !== g._original.start ||
-      g.end !== g._original.end ||
-      g.text !== g._original.text ||
-      (g as any).idx !== g._original.idx
-    );
-  },
-
-  syncGroup: (id, serverGroup) =>
-    set((state) => ({
-      groups: state.groups.map((g) =>
-        g.id === id
-          ? {
-              ...serverGroup,
-              _original: {
-                start: serverGroup.start,
-                end: serverGroup.end,
-                text: serverGroup.text,
-                idx: (serverGroup as any).idx,
-              },
-            }
-          : g
-      ),
-    })),
 }));
 
 export default useTimelineStore;
