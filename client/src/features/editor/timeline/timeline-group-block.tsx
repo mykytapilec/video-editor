@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { TimelineGroup } from "@/types";
 import useTimelineStore from "../store/use-timeline-store";
 import useThumbnails from "../hooks/use-thumbnails";
@@ -25,7 +25,7 @@ export function TimelineGroupBlock({
   const resizeLeft = useTimelineStore((s) => s.updateGroupResizeLeft);
   const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
-  const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
+  const videoSrc = useEditorStore((s) => s.currentVideoSrc);
 
   const isActive = selectedGroupId === group.id;
 
@@ -38,31 +38,36 @@ export function TimelineGroupBlock({
 
   const visibleStart = Math.max(0, group.start);
   const visibleEnd = Math.min(group.end, videoDuration);
-  if (visibleEnd - visibleStart <= 0) return null;
+  if (visibleEnd <= visibleStart) return null;
 
-  const widthPx = (group.end - group.start) * pixelsPerSecond;
-
-  const thumbsCount = Math.max(1, Math.floor(widthPx / 120));
+  /* ===== thumbnails ONLY for active group ===== */
+  const thumbsCount = Math.max(
+    1,
+    Math.floor(
+      ((group.end - group.start) * pixelsPerSecond) / 140
+    )
+  );
 
   const times = useMemo(() => {
+    if (!isActive) return [];
     const arr: number[] = [];
     for (let i = 0; i < thumbsCount; i++) {
       const t =
         group.start +
-        (i / Math.max(1, thumbsCount - 1)) * (group.end - group.start);
+        (i / Math.max(1, thumbsCount - 1)) *
+          (group.end - group.start);
       arr.push(t);
     }
     return arr;
-  }, [group.start, group.end, thumbsCount]);
+  }, [isActive, thumbsCount, group.start, group.end]);
 
   const { thumbs } = useThumbnails(
     isActive ? group.id : undefined,
-    currentVideoSrc,
+    isActive ? videoSrc : null,
     times,
     {
-      width: 120,
       height,
-      maxThumbs: 12,
+      width: 160,
       crossOrigin: "anonymous",
     }
   );
@@ -137,44 +142,49 @@ export function TimelineGroupBlock({
         selectGroup(group.id);
         onDragStart(e);
       }}
-      className="absolute top-0 rounded select-none cursor-grab"
+      className={
+        "absolute top-0 rounded overflow-hidden select-none " +
+        (isActive
+          ? "z-30 ring-2 ring-white"
+          : "bg-blue-500/40 z-10")
+      }
       style={{
         left: group.start * pixelsPerSecond,
-        width: widthPx,
+        width: (group.end - group.start) * pixelsPerSecond,
         height,
-        backgroundColor: isActive ? "transparent" : "rgba(96,165,250,0.25)",
-        border: isActive ? "1px solid rgba(255,255,255,0.9)" : "none",
-        zIndex: isActive ? 30 : 10,
+        cursor: isActive ? "grab" : "pointer",
       }}
     >
-      {isActive && thumbs && thumbs.length > 0 && (
-        <div className="absolute inset-0 flex h-full z-10 pointer-events-none">
+      {isActive && thumbs.length > 0 && (
+        <div className="absolute inset-0 flex">
           {thumbs.map((src, i) =>
             src ? (
               <img
                 key={i}
                 src={src}
                 className="object-cover"
-                style={{ width: `${100 / thumbs.length}%`, height: "100%" }}
+                style={{
+                  width: `${100 / thumbs.length}%`,
+                  height: "100%",
+                }}
                 draggable={false}
               />
             ) : (
-              <div key={i} className="flex-1 bg-gray-800" />
+              <div key={i} className="flex-1 bg-black" />
             )
           )}
         </div>
       )}
+
       {isActive && (
         <>
           <div
             onMouseDown={onResizeLeft}
-            className="absolute left-0 top-0 h-full w-2 cursor-ew-resize
-                       bg-black/40 z-30"
+            className="absolute left-0 top-0 h-full w-2 bg-black/40 cursor-ew-resize z-40"
           />
           <div
             onMouseDown={onResizeRight}
-            className="absolute right-0 top-0 h-full w-2 cursor-ew-resize
-                       bg-black/40 z-30"
+            className="absolute right-0 top-0 h-full w-2 bg-black/40 cursor-ew-resize z-40"
           />
         </>
       )}
