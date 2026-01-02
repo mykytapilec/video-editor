@@ -2,6 +2,15 @@ import { create } from "zustand";
 import { TimelineGroup } from "@/types";
 import React from "react";
 
+type TimelineGroupWithOriginal = TimelineGroup & {
+  _original?: {
+    start: number;
+    end: number;
+    text?: string;
+    idx?: number;
+  };
+};
+
 export interface ITimelineStore {
   playerRef: React.RefObject<HTMLVideoElement | null> | null;
   setPlayerRef: (
@@ -10,7 +19,7 @@ export interface ITimelineStore {
 
   fps: number;
 
-  groups: TimelineGroup[];
+  groups: TimelineGroupWithOriginal[];
   setGroups: (groups: TimelineGroup[]) => void;
   updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
 
@@ -32,6 +41,9 @@ export interface ITimelineStore {
 
   seekToGroup: (groupId: string) => void;
   playGroup: (groupId: string) => void;
+
+  hasGroupChanges: (id: string) => boolean;
+  syncGroup: (id: string, serverGroup: TimelineGroup) => void;
 }
 
 const useTimelineStore = create<ITimelineStore>((set, get) => ({
@@ -41,7 +53,18 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
   fps: 30,
 
   groups: [],
-  setGroups: (groups) => set({ groups }),
+  setGroups: (groups) =>
+    set({
+      groups: groups.map((g) => ({
+        ...g,
+        _original: {
+          start: g.start,
+          end: g.end,
+          text: g.text,
+          idx: (g as any).idx,
+        },
+      })),
+    }),
 
   updateGroup: (id, patch) =>
     set((state) => ({
@@ -164,6 +187,35 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
     playerRef.current.currentTime = group.start;
     playerRef.current.play();
   },
+
+  hasGroupChanges: (id) => {
+    const g = get().groups.find((g) => g.id === id);
+    if (!g || !g._original) return false;
+
+    return (
+      g.start !== g._original.start ||
+      g.end !== g._original.end ||
+      g.text !== g._original.text ||
+      (g as any).idx !== g._original.idx
+    );
+  },
+
+  syncGroup: (id, serverGroup) =>
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === id
+          ? {
+              ...serverGroup,
+              _original: {
+                start: serverGroup.start,
+                end: serverGroup.end,
+                text: serverGroup.text,
+                idx: (serverGroup as any).idx,
+              },
+            }
+          : g
+      ),
+    })),
 }));
 
 export default useTimelineStore;
