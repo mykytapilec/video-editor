@@ -6,7 +6,7 @@ import { UploadFile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UploadIcon, FileIcon, X } from "lucide-react";
-import clsx from "clsx";
+
 
 const ModalUpload: React.FC = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);

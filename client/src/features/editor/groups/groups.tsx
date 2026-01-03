@@ -5,6 +5,7 @@ import { useEditorStore } from "../store/use-editor-store";
 import useTimelineStore from "../store/use-timeline-store";
 import { mapApiGroupsToTimeline } from "../menu-item/mapGroups";
 import GroupsList from "./GroupsList";
+import ApiModal from "@/components/api-modal";
 
 export default function Groups() {
   const fetchGroups = useEditorStore((s) => s.fetchGroups);
@@ -37,6 +38,7 @@ export default function Groups() {
       </div>
 
       <GroupsList />
+      <ApiModal />
     </div>
   );
 }

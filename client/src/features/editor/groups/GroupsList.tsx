@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useTimelineStore from "../store/use-timeline-store";
 import { updateGroupApi } from "@/app/api/groups/groups.api";
+import { useApiModalStore } from "../store/use-api-modal-store";
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -18,9 +19,12 @@ export default function GroupsList() {
   const updateGroup = useTimelineStore((s) => s.updateGroup);
   const isGroupDirty = useTimelineStore((s) => s.isGroupDirty);
   const getGroupPatch = useTimelineStore((s) => s.getGroupPatch);
+  const revertGroup = useTimelineStore((s) => s.revertGroup);
   const markGroupsAsOriginal = useTimelineStore(
     (s) => s.markGroupsAsOriginal
   );
+
+  const openApiModal = useApiModalStore((s) => s.open);
 
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -90,18 +94,32 @@ export default function GroupsList() {
               {isDirty && (
                 <button
                   disabled={loadingId === g.id}
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
+
                     const patch = getGroupPatch(g.id);
                     if (!patch) return;
 
-                    try {
-                      setLoadingId(g.id);
-                      await updateGroupApi(g.id, patch);
-                      markGroupsAsOriginal();
-                    } finally {
-                      setLoadingId(null);
-                    }
+                    openApiModal({
+                      title: "Update group",
+                      description: `Are you sure you want to update group #${i + 1}?`,
+                      confirmText: "Update",
+                      cancelText: "Cancel",
+
+                      onConfirm: async () => {
+                        try {
+                          setLoadingId(g.id);
+                          await updateGroupApi(g.id, patch);
+                          markGroupsAsOriginal();
+                        } finally {
+                          setLoadingId(null);
+                        }
+                      },
+
+                      onCancel: () => {
+                        revertGroup(g.id);
+                      },
+                    });
                   }}
                   className="text-xs text-green-400 disabled:opacity-40"
                 >

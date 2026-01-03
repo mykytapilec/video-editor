@@ -17,6 +17,7 @@ export interface ITimelineStore {
   markGroupsAsOriginal: () => void;
 
   updateGroup: (id: string, patch: Partial<TimelineGroup>) => void;
+  revertGroup: (id: string) => void;
 
   isGroupDirty: (id: string) => boolean;
   getGroupPatch: (id: string) => Partial<TimelineGroup> | null;
@@ -68,29 +69,40 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       ),
     })),
 
+  revertGroup: (id) =>
+    set((state) => {
+      const original = state.originalGroups.find((g) => g.id === id);
+      if (!original) return {};
+
+      return {
+        groups: state.groups.map((g) =>
+          g.id === id ? structuredClone(original) : g
+        ),
+      };
+    }),
+
   isGroupDirty: (id) => {
     const { groups, originalGroups } = get();
-    const g = groups.find((x) => x.id === id);
-    const o = originalGroups.find((x) => x.id === id);
+    const g = groups.find((g) => g.id === id);
+    const o = originalGroups.find((g) => g.id === id);
     if (!g || !o) return false;
-
-    return (
-      g.start !== o.start ||
-      g.end !== o.end ||
-      g.text !== o.text
-    );
+    return JSON.stringify(g) !== JSON.stringify(o);
   },
 
   getGroupPatch: (id) => {
     const { groups, originalGroups } = get();
-    const g = groups.find((x) => x.id === id);
-    const o = originalGroups.find((x) => x.id === id);
+    const g = groups.find((g) => g.id === id);
+    const o = originalGroups.find((g) => g.id === id);
     if (!g || !o) return null;
 
     const patch: Partial<TimelineGroup> = {};
-    if (g.start !== o.start) patch.start = g.start;
-    if (g.end !== o.end) patch.end = g.end;
-    if (g.text !== o.text) patch.text = g.text;
+
+    (["start", "end", "text"] as const).forEach((key) => {
+      if (g[key] !== o[key]) {
+        // NOTE: TS limitation with Partial<T> + indexed access, safe any here
+        (patch as any)[key] = g[key];
+      }
+    });
 
     return Object.keys(patch).length ? patch : null;
   },
@@ -145,7 +157,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeLeft: (id, wantedStart) =>
     set((state) => {
-      const MIN = 0.2;
+      const MIN_DURATION = 0.2;
 
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => g.id === id);
@@ -159,7 +171,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       if (prev) start = Math.max(start, prev.end);
       else start = Math.max(start, 0);
 
-      start = Math.min(start, group.end - MIN);
+      start = Math.min(start, group.end - MIN_DURATION);
 
       return {
         groups: state.groups.map((g) =>
@@ -170,7 +182,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeRight: (id, wantedEnd) =>
     set((state) => {
-      const MIN = 0.2;
+      const MIN_DURATION = 0.2;
 
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => g.id === id);
@@ -184,7 +196,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       if (next) end = Math.min(end, next.start);
       else end = Math.min(end, state.videoDuration);
 
-      end = Math.max(end, group.start + MIN);
+      end = Math.max(end, group.start + MIN_DURATION);
 
       return {
         groups: state.groups.map((g) =>
