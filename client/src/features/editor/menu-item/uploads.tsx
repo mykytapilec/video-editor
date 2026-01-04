@@ -3,8 +3,9 @@
 import React from "react";
 import { useUploadStore } from "@/features/editor/store/use-upload-store";
 import ModalUpload from "@/components/modal-upload";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const UploadMenuItem: React.FC = () => {
   const { setShowUploadModal, showUploadModal } = useUploadStore();
@@ -19,7 +20,10 @@ const UploadMenuItem: React.FC = () => {
 
       <Button
         onClick={openModal}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 flex items-center justify-center gap-2 rounded-md shadow-md"
+        className={cn(
+          buttonVariants({ variant: "default" }),
+          "w-full flex items-center justify-center gap-2"
+        )}
       >
         <PlusCircle className="w-4 h-4" />
         Uploads
