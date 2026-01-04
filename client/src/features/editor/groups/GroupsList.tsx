@@ -4,6 +4,7 @@ import { useState } from "react";
 import useTimelineStore from "../store/use-timeline-store";
 import { updateGroupApi } from "@/app/api/groups/groups.api";
 import { useApiModalStore } from "../store/use-api-modal-store";
+import NewGroup from "./NewGroup";
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -31,6 +32,7 @@ export default function GroupsList() {
 
   return (
     <div className="flex flex-col gap-2">
+      <NewGroup />
       {groups.map((g, i) => {
         const id = Number(g.id);
         const isSelected = selectedGroupId === id;

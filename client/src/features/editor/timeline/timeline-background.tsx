@@ -14,6 +14,12 @@ export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
   const currentVideoSrc = useEditorStore((s) => s.currentVideoSrc);
   const videoDuration = useTimelineStore((s) => s.videoDuration) || 1;
 
+  const createMode = useTimelineStore((s) => s.createMode);
+  const selectDraftStart = useTimelineStore((s) => s.selectDraftStart);
+  const selectDraftEnd = useTimelineStore((s) => s.selectDraftEnd);
+  const tempStart = useTimelineStore((s) => s.tempStart);
+  const tempEnd = useTimelineStore((s) => s.tempEnd);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibleStart, setVisibleStart] = useState(0);
   const [visibleWidth, setVisibleWidth] = useState(0);
@@ -68,14 +74,40 @@ export default function TimelineBackground({ pixelsPerSecond, height }: Props) {
     }
   );
 
+  const onClick = (e: React.MouseEvent) => {
+    if (createMode === "idle") return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const time = x / pixelsPerSecond;
+
+    if (createMode === "selectingStart") selectDraftStart(time);
+    if (createMode === "selectingEnd") selectDraftEnd(time);
+  };
+
   const width = videoDuration * pixelsPerSecond;
 
   return (
     <div
       ref={scrollRef}
+      onClick={onClick}
       className="relative w-full h-full bg-black overflow-x-auto select-none"
       style={{ width, height }}
     >
+      {tempStart != null && (
+        <div
+          className="absolute top-0 bottom-0 w-px bg-red-500 z-50"
+          style={{ left: tempStart * pixelsPerSecond }}
+        />
+      )}
+
+      {tempEnd != null && (
+        <div
+          className="absolute top-0 bottom-0 w-px bg-orange-400 z-50"
+          style={{ left: tempEnd * pixelsPerSecond }}
+        />
+      )}
+
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
           Loading…

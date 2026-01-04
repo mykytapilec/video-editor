@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { TimelineGroup } from "@/types";
 import React from "react";
 
+export type CreateMode = "idle" | "selectingStart" | "selectingEnd";
+
 export interface DraftGroup {
   start?: number;
   end?: number;
@@ -44,10 +46,31 @@ export interface ITimelineStore {
   seekToGroup: (groupId: number) => void;
   playGroup: (groupId: number) => void;
 
+  /* CREATE GROUP */
   draftGroup: DraftGroup | null;
+  createMode: CreateMode;
+  createError: string | null;
+  tempStart: number | null;
+  tempEnd: number | null;
+
   setDraftGroup: (dg: DraftGroup | null) => void;
+  setCreateMode: (m: CreateMode) => void;
+
+  selectDraftStart: (time: number) => void;
+  selectDraftEnd: (time: number) => void;
+
   commitDraftGroup: () => void;
 }
+
+const overlaps = (time: number, groups: TimelineGroup[]) =>
+  groups.some((g) => time > g.start && time < g.end);
+
+const hasGroupBetween = (
+  start: number,
+  end: number,
+  groups: TimelineGroup[]
+) =>
+  groups.some((g) => g.start >= start && g.end <= end);
 
 const useTimelineStore = create<ITimelineStore>((set, get) => ({
   playerRef: null,
@@ -82,7 +105,6 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
         (g) => Number(g.id) === id
       );
       if (!original) return {};
-
       return {
         groups: state.groups.map((g) =>
           Number(g.id) === id ? structuredClone(original) : g
@@ -104,12 +126,11 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
     const o = originalGroups.find((g) => Number(g.id) === id);
     if (!g || !o) return null;
 
-    const patch: Partial<TimelineGroup> = {};
-    (["start", "end", "text"] as const).forEach((key) => {
-      if (g[key] !== o[key]) {
-        (patch as any)[key] = g[key];
-      }
-    });
+    const patch = {} as Partial<TimelineGroup>;
+
+    if (g.start !== o.start) patch.start = g.start;
+    if (g.end !== o.end) patch.end = g.end;
+    if (g.text !== o.text) patch.text = g.text;
 
     return Object.keys(patch).length ? patch : null;
   },
@@ -118,11 +139,9 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
   selectGroup: (id) => {
     const { groups, playerRef } = get();
     const group = groups.find((g) => Number(g.id) === id);
-
     if (group && playerRef?.current) {
       playerRef.current.currentTime = group.start;
     }
-
     set({ selectedGroupId: id });
   },
 
@@ -134,6 +153,8 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
+
+  /* --- drag / resize (без изменений) --- */
 
   updateGroupDrag: (id, wantedStart) =>
     set((state) => {
@@ -164,19 +185,19 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeLeft: (id, wantedStart) =>
     set((state) => {
-      const MIN_DURATION = 0.2;
+      const MIN = 0.2;
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => Number(g.id) === id);
       if (index === -1) return {};
 
-      const group = groups[index];
       const prev = groups[index - 1];
+      const group = groups[index];
 
       let start = wantedStart;
       if (prev) start = Math.max(start, prev.end);
       else start = Math.max(start, 0);
 
-      start = Math.min(start, group.end - MIN_DURATION);
+      start = Math.min(start, group.end - MIN);
 
       return {
         groups: state.groups.map((g) =>
@@ -187,7 +208,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   updateGroupResizeRight: (id, wantedEnd) =>
     set((state) => {
-      const MIN_DURATION = 0.2;
+      const MIN = 0.2;
       const groups = [...state.groups].sort((a, b) => a.start - b.start);
       const index = groups.findIndex((g) => Number(g.id) === id);
       if (index === -1) return {};
@@ -199,7 +220,7 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       if (next) end = Math.min(end, next.start);
       else end = Math.min(end, state.videoDuration);
 
-      end = Math.max(end, group.start + MIN_DURATION);
+      end = Math.max(end, group.start + MIN);
 
       return {
         groups: state.groups.map((g) =>
@@ -208,47 +229,126 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       };
     }),
 
-  seekToGroup: (groupId) => {
+  seekToGroup: (id) => {
     const { groups, playerRef } = get();
-    const group = groups.find((g) => Number(g.id) === groupId);
-    if (!group || !playerRef?.current) return;
-    playerRef.current.currentTime = group.start;
+    const g = groups.find((g) => Number(g.id) === id);
+    if (g && playerRef?.current) playerRef.current.currentTime = g.start;
   },
 
-  playGroup: (groupId) => {
+  playGroup: (id) => {
     const { groups, playerRef } = get();
-    const group = groups.find((g) => Number(g.id) === groupId);
-    if (!group || !playerRef?.current) return;
-    playerRef.current.currentTime = group.start;
+    const g = groups.find((g) => Number(g.id) === id);
+    if (!g || !playerRef?.current) return;
+    playerRef.current.currentTime = g.start;
     playerRef.current.play();
   },
 
+  /* ---------- CREATE GROUP ---------- */
+
   draftGroup: null,
-  setDraftGroup: (dg) => set({ draftGroup: dg }),
+  createMode: "idle",
+  createError: null,
+  tempStart: null,
+  tempEnd: null,
+
+  setDraftGroup: (dg) =>
+    set({
+      draftGroup: dg,
+      createError: null,
+      tempStart: null,
+      tempEnd: null,
+      createMode: "idle",
+    }),
+
+  setCreateMode: (m) => set({ createMode: m, createError: null }),
+
+  selectDraftStart: (time) => {
+    const { groups, draftGroup } = get();
+    if (!draftGroup) return;
+
+    if (overlaps(time, groups)) {
+      set({
+        createError:
+          "Start point overlaps an existing group. Choose another point.",
+      });
+      return;
+    }
+
+    set({
+      draftGroup: { ...draftGroup, start: time },
+      tempStart: time,
+      createMode: "selectingEnd",
+      createError: null,
+    });
+  },
+
+  selectDraftEnd: (time) => {
+    const { draftGroup, groups } = get();
+    if (!draftGroup?.start) return;
+
+    if (time <= draftGroup.start) {
+      set({
+        createError: "End point must be after the start point.",
+      });
+      return;
+    }
+
+    if (overlaps(time, groups)) {
+      set({
+        createError:
+          "End point overlaps an existing group. Choose another point.",
+      });
+      return;
+    }
+
+    if (hasGroupBetween(draftGroup.start, time, groups)) {
+      set({
+        createError:
+          "Another group exists between start and end points.",
+      });
+      return;
+    }
+
+    set({
+      draftGroup: { ...draftGroup, end: time },
+      tempEnd: time,
+      createMode: "idle",
+      createError: null,
+    });
+  },
 
   commitDraftGroup: () =>
     set((state) => {
-      if (!state.draftGroup) return {};
+      if (
+        !state.draftGroup?.text ||
+        state.draftGroup.start == null ||
+        state.draftGroup.end == null
+      )
+        return {};
 
       const lastId =
         state.groups.length > 0
           ? Math.max(...state.groups.map((g) => Number(g.id)))
           : 0;
 
-      const nextId = lastId + 1;
+      const id = lastId + 1;
 
       const newGroup: TimelineGroup = {
-        id: String(nextId),
-        start: state.draftGroup.start ?? 0,
-        end: state.draftGroup.end ?? 1,
-        text: state.draftGroup.text ?? "",
-        sourceId: 0,
-        name: state.draftGroup.text ?? `Group ${nextId}`,
+        id: String(id),
+        start: state.draftGroup.start,
+        end: state.draftGroup.end,
+        text: state.draftGroup.text,
+        sourceId: id,
+        name: state.draftGroup.text,
       };
 
       return {
         groups: [...state.groups, newGroup],
         draftGroup: null,
+        createMode: "idle",
+        tempStart: null,
+        tempEnd: null,
+        createError: null,
       };
     }),
 }));
