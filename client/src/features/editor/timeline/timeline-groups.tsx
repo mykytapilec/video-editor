@@ -1,14 +1,12 @@
 "use client";
 
-import React from "react";
-import { TimelineGroup } from "@/types";
-import { TimelineGroupBlock } from "./timeline-group-block";
 import useTimelineStore from "../store/use-timeline-store";
+import { TimelineGroupBlock } from "./timeline-group-block";
 
-interface Props {
+type Props = {
   pixelsPerSecond: number;
   height: number;
-}
+};
 
 export default function TimelineGroups({
   pixelsPerSecond,
@@ -20,19 +18,15 @@ export default function TimelineGroups({
 
   if (!groups.length || !videoDuration) return null;
 
-  const visibleGroups = groups.filter(
-    (g) => g.end <= videoDuration
-  );
-
   return (
-    <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-      {visibleGroups.map((group: TimelineGroup) => (
+    <div className="absolute inset-0 pointer-events-none">
+      {groups.map((group) => (
         <div
           key={group.id}
-          className="relative pointer-events-auto"
+          className="pointer-events-auto"
           onClick={(e) => {
             e.stopPropagation();
-            selectGroup(group.id);
+            selectGroup(Number(group.id));
           }}
         >
           <TimelineGroupBlock

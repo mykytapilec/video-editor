@@ -18,8 +18,11 @@ const Container = ({ children }: { children: React.ReactNode }) => {
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
   useEffect(() => {
-    if (selectedGroupId) {
-      const group = groups.find((g) => g.id === selectedGroupId) || null;
+    if (selectedGroupId !== null) {
+      const group =
+        groups.find(
+          (g) => Number(g.id) === selectedGroupId
+        ) || null;
       setSelectedGroup(group);
       setTrackItem(null);
     } else {
@@ -29,7 +32,7 @@ const Container = ({ children }: { children: React.ReactNode }) => {
   }, [selectedGroupId, groups, setTrackItem]);
 
   return (
-    <div className="flex w-[272px] flex-none border-l border-border/80 bg-muted hidden lg:block">
+    <div className="flex w-[272px] border-l border-border bg-muted hidden lg:block">
       {React.cloneElement(children as React.ReactElement<any>, {
         selectedGroup,
       })}
@@ -37,23 +40,21 @@ const Container = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const ActiveControlItem = ({ selectedGroup }: { selectedGroup?: any | null }) => {
+const ActiveControlItem = ({ selectedGroup }: { selectedGroup?: any }) => {
   if (selectedGroup) return <BasicGroup group={selectedGroup} />;
 
   return (
-    <div className="pb-32 flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground h-[calc(100vh-58px)]">
+    <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
       <LassoSelect />
-      <span className="text-zinc-500">No item selected</span>
+      <span>No item selected</span>
     </div>
   );
 };
 
-export const ControlItem = () => {
-  return (
-    <Container>
-      <ActiveControlItem />
-    </Container>
-  );
-};
+export const ControlItem = () => (
+  <Container>
+    <ActiveControlItem />
+  </Container>
+);
 
 export default ControlItem;

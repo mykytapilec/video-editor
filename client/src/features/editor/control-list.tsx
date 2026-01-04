@@ -9,7 +9,10 @@ export default function ControlList() {
 
   useEffect(() => {
     setHasSelection(
-      Boolean(selectedGroupId && groups.find(g => g.id === selectedGroupId))
+      Boolean(
+        selectedGroupId !== null &&
+        groups.find((g) => Number(g.id) === selectedGroupId)
+      )
     );
   }, [selectedGroupId, groups]);
 

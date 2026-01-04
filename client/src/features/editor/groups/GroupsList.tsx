@@ -26,22 +26,22 @@ export default function GroupsList() {
 
   const openApiModal = useApiModalStore((s) => s.open);
 
-  const [editingTextId, setEditingTextId] = useState<string | null>(null);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [editingTextId, setEditingTextId] = useState<number | null>(null);
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   return (
     <div className="flex flex-col gap-2">
       {groups.map((g, i) => {
-        const isSelected = selectedGroupId === g.id;
-        const isDirty = isGroupDirty(g.id);
-        const isEditingText = editingTextId === g.id;
-
+        const id = Number(g.id);
+        const isSelected = selectedGroupId === id;
+        const isDirty = isGroupDirty(id);
+        const isEditingText = editingTextId === id;
         const duration = g.end - g.start;
 
         return (
           <div
             key={g.id}
-            onClick={() => selectGroup(g.id)}
+            onClick={() => selectGroup(id)}
             className={`rounded border p-2 cursor-pointer ${
               isSelected
                 ? "border-blue-400 bg-blue-500/20"
@@ -52,13 +52,12 @@ export default function GroupsList() {
               #{i + 1}
             </div>
 
-            {/* TEXT */}
             {isEditingText ? (
               <textarea
                 className="w-full text-sm bg-black/20 border rounded p-1 mb-2"
                 value={g.text}
                 onChange={(e) =>
-                  updateGroup(g.id, { text: e.target.value })
+                  updateGroup(id, { text: e.target.value })
                 }
                 onBlur={() => setEditingTextId(null)}
                 autoFocus
@@ -66,25 +65,23 @@ export default function GroupsList() {
             ) : (
               <div
                 className="text-sm line-clamp-3 mb-2"
-                onDoubleClick={() => setEditingTextId(g.id)}
+                onDoubleClick={() => setEditingTextId(id)}
               >
                 {g.text}
               </div>
             )}
 
-            {/* TIME INFO */}
             <div className="text-xs text-muted-foreground flex gap-3 mb-2">
               <span>start: {formatTime(g.start)}</span>
               <span>end: {formatTime(g.end)}</span>
               <span>duration: {formatTime(duration)}</span>
             </div>
 
-            {/* ACTIONS */}
             <div className="flex justify-between items-center">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEditingTextId(g.id);
+                  setEditingTextId(id);
                 }}
                 className="text-xs text-blue-400"
               >
@@ -93,37 +90,32 @@ export default function GroupsList() {
 
               {isDirty && (
                 <button
-                  disabled={loadingId === g.id}
+                  disabled={loadingId === id}
                   onClick={(e) => {
                     e.stopPropagation();
-
-                    const patch = getGroupPatch(g.id);
+                    const patch = getGroupPatch(id);
                     if (!patch) return;
 
                     openApiModal({
                       title: "Update group",
-                      description: `Are you sure you want to update group #${i + 1}?`,
+                      description: `Update group #${i + 1}?`,
                       confirmText: "Update",
                       cancelText: "Cancel",
-
                       onConfirm: async () => {
                         try {
-                          setLoadingId(g.id);
-                          await updateGroupApi(g.id, patch);
+                          setLoadingId(id);
+                            await updateGroupApi(String(id), patch);
                           markGroupsAsOriginal();
                         } finally {
                           setLoadingId(null);
                         }
                       },
-
-                      onCancel: () => {
-                        revertGroup(g.id);
-                      },
+                      onCancel: () => revertGroup(id),
                     });
                   }}
-                  className="text-xs text-green-400 disabled:opacity-40"
+                  className="text-xs text-green-400"
                 >
-                  {loadingId === g.id ? "Updating..." : "Update"}
+                  Update
                 </button>
               )}
             </div>

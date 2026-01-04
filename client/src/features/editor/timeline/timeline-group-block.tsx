@@ -17,7 +17,8 @@ export function TimelineGroupBlock({
   pixelsPerSecond,
   height,
 }: Props) {
-  const videoDuration = useTimelineStore((s) => s.videoDuration);
+  const groupId = Number(group.id);
+
   const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
   const selectGroup = useTimelineStore((s) => s.selectGroup);
 
@@ -26,8 +27,9 @@ export function TimelineGroupBlock({
   const resizeRight = useTimelineStore((s) => s.updateGroupResizeRight);
 
   const videoSrc = useEditorStore((s) => s.currentVideoSrc);
+  const videoDuration = useTimelineStore((s) => s.videoDuration);
 
-  const isActive = selectedGroupId === group.id;
+  const isActive = selectedGroupId === groupId;
 
   const dragStartX = useRef(0);
   const startAtDrag = useRef(0);
@@ -40,7 +42,6 @@ export function TimelineGroupBlock({
   const visibleEnd = Math.min(group.end, videoDuration);
   if (visibleEnd <= visibleStart) return null;
 
-  /* ===== thumbnails ONLY for active group ===== */
   const thumbsCount = Math.max(
     1,
     Math.floor(
@@ -50,26 +51,18 @@ export function TimelineGroupBlock({
 
   const times = useMemo(() => {
     if (!isActive) return [];
-    const arr: number[] = [];
-    for (let i = 0; i < thumbsCount; i++) {
-      const t =
-        group.start +
-        (i / Math.max(1, thumbsCount - 1)) *
-          (group.end - group.start);
-      arr.push(t);
-    }
-    return arr;
+    return Array.from({ length: thumbsCount }, (_, i) =>
+      group.start +
+      (i / Math.max(1, thumbsCount - 1)) *
+        (group.end - group.start)
+    );
   }, [isActive, thumbsCount, group.start, group.end]);
 
   const { thumbs } = useThumbnails(
     isActive ? group.id : undefined,
     isActive ? videoSrc : null,
     times,
-    {
-      height,
-      width: 160,
-      crossOrigin: "anonymous",
-    }
+    { height, width: 160 }
   );
 
   const onDragStart = (e: React.MouseEvent) => {
@@ -81,49 +74,7 @@ export function TimelineGroupBlock({
 
     const move = (ev: MouseEvent) => {
       const dx = ev.clientX - dragStartX.current;
-      updateDrag(group.id, startAtDrag.current + dx / pixelsPerSecond);
-    };
-
-    const up = () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-  };
-
-  const onResizeLeft = (e: React.MouseEvent) => {
-    if (!isActive) return;
-    e.stopPropagation();
-
-    resizeStartX.current = e.clientX;
-    startAtResize.current = group.start;
-
-    const move = (ev: MouseEvent) => {
-      const dx = ev.clientX - resizeStartX.current;
-      resizeLeft(group.id, startAtResize.current + dx / pixelsPerSecond);
-    };
-
-    const up = () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-  };
-
-  const onResizeRight = (e: React.MouseEvent) => {
-    if (!isActive) return;
-    e.stopPropagation();
-
-    resizeStartX.current = e.clientX;
-    endAtResize.current = group.end;
-
-    const move = (ev: MouseEvent) => {
-      const dx = ev.clientX - resizeStartX.current;
-      resizeRight(group.id, endAtResize.current + dx / pixelsPerSecond);
+      updateDrag(groupId, startAtDrag.current + dx / pixelsPerSecond);
     };
 
     const up = () => {
@@ -139,22 +90,26 @@ export function TimelineGroupBlock({
     <div
       onMouseDown={(e) => {
         e.stopPropagation();
-        selectGroup(group.id);
-        onDragStart(e);
+        selectGroup(groupId);
       }}
-      className={
-        "absolute top-0 rounded overflow-hidden select-none " +
-        (isActive
-          ? "z-30 ring-2 ring-white"
-          : "bg-blue-500/40 z-10")
-      }
+      className={`absolute top-0 rounded overflow-hidden ${
+        isActive
+          ? "ring-2 ring-white z-30"
+          : "bg-blue-500/40 z-10"
+      }`}
       style={{
         left: group.start * pixelsPerSecond,
         width: (group.end - group.start) * pixelsPerSecond,
         height,
-        cursor: isActive ? "grab" : "pointer",
       }}
     >
+      {isActive && (
+        <div
+          onMouseDown={onDragStart}
+          className="absolute inset-y-0 left-2 right-2 cursor-grab z-30"
+        />
+      )}
+
       {isActive && thumbs.length > 0 && (
         <div className="absolute inset-0 flex">
           {thumbs.map((src, i) =>
@@ -169,9 +124,7 @@ export function TimelineGroupBlock({
                 }}
                 draggable={false}
               />
-            ) : (
-              <div key={i} className="flex-1 bg-black" />
-            )
+            ) : null
           )}
         </div>
       )}
@@ -179,12 +132,55 @@ export function TimelineGroupBlock({
       {isActive && (
         <>
           <div
-            onMouseDown={onResizeLeft}
-            className="absolute left-0 top-0 h-full w-2 bg-black/40 cursor-ew-resize z-40"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              resizeStartX.current = e.clientX;
+              startAtResize.current = group.start;
+
+              const move = (ev: MouseEvent) => {
+                resizeLeft(
+                  groupId,
+                  startAtResize.current +
+                    (ev.clientX - resizeStartX.current) /
+                      pixelsPerSecond
+                );
+              };
+
+              const up = () => {
+                window.removeEventListener("mousemove", move);
+                window.removeEventListener("mouseup", up);
+              };
+
+              window.addEventListener("mousemove", move);
+              window.addEventListener("mouseup", up);
+            }}
+            className="absolute left-0 top-0 h-full w-2 cursor-ew-resize z-40"
           />
+
           <div
-            onMouseDown={onResizeRight}
-            className="absolute right-0 top-0 h-full w-2 bg-black/40 cursor-ew-resize z-40"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              resizeStartX.current = e.clientX;
+              endAtResize.current = group.end;
+
+              const move = (ev: MouseEvent) => {
+                resizeRight(
+                  groupId,
+                  endAtResize.current +
+                    (ev.clientX - resizeStartX.current) /
+                      pixelsPerSecond
+                );
+              };
+
+              const up = () => {
+                window.removeEventListener("mousemove", move);
+                window.removeEventListener("mouseup", up);
+              };
+
+              window.addEventListener("mousemove", move);
+              window.addEventListener("mouseup", up);
+            }}
+            className="absolute right-0 top-0 h-full w-2 cursor-ew-resize z-40"
           />
         </>
       )}
