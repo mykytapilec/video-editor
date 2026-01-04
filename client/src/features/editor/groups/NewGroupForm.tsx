@@ -11,14 +11,17 @@ const format = (s?: number) =>
 
 export default function NewGroupForm() {
   const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const groups = useTimelineStore((s) => s.groups);
   const setGroups = useTimelineStore((s) => s.setGroups);
+
   const draftGroup = useTimelineStore((s) => s.draftGroup);
   const setDraftGroup = useTimelineStore((s) => s.setDraftGroup);
 
-  const setCreateMode = useTimelineStore((s: any) => s.setCreateMode);
+  const setCreateMode = useTimelineStore((s) => s.setCreateMode);
+
+  const createError = useTimelineStore((s) => s.createError);
+  const setCreateError = useTimelineStore((s) => s.setCreateError);
 
   const handleCreateClick = () => {
     setDraftGroup({ text: "" });
@@ -29,8 +32,8 @@ export default function NewGroupForm() {
   const handleCancel = () => {
     setDraftGroup(null);
     setCreating(false);
+    setCreateMode("idle");
     setCreateError(null);
-    setCreateMode(null);
   };
 
   const ready =
@@ -39,29 +42,30 @@ export default function NewGroupForm() {
     draftGroup.end != null;
 
   const handleCreate = async () => {
-  if (!draftGroup) return;
-  try {
-    const nextIdx = groups.length + 1;
-        const newGroup = await createGroupApi({
+    if (!draftGroup) return;
+
+    try {
+      const nextIdx = groups.length + 1;
+
+      const newGroup = await createGroupApi({
         start: draftGroup.start!,
         end: draftGroup.end!,
         text: draftGroup.text!,
         sourceId: 0,
         name: draftGroup.text!,
         idx: nextIdx,
-    });
+      });
 
-
-    setGroups([...groups, newGroup]);
-    setDraftGroup(null);
-    setCreating(false);
-    setCreateMode(null);
-    setCreateError(null);
-  } catch (e: any) {
-    console.error(e);
-    setCreateError("Failed to create group on server");
-  }
-};
+      setGroups([...groups, newGroup]);
+      setDraftGroup(null);
+      setCreating(false);
+      setCreateMode("idle");
+      setCreateError(null);
+    } catch (e) {
+      console.error(e);
+      setCreateError("Failed to create group on server");
+    }
+  };
 
   return (
     <div>
@@ -97,18 +101,18 @@ export default function NewGroupForm() {
 
           <div className="flex gap-2 w-full max-w-full">
             <input
-                readOnly
-                placeholder="Start"
-                value={format(draftGroup.start)}
-                onClick={() => setCreateMode("selectingStart")}
-                className="flex-1 p-1 rounded cursor-pointer min-w-0"
+              readOnly
+              placeholder="Start"
+              value={format(draftGroup.start)}
+              onClick={() => setCreateMode("selectingStart")}
+              className="flex-1 p-1 rounded cursor-pointer min-w-0"
             />
             <input
-                readOnly
-                placeholder="End"
-                value={format(draftGroup.end)}
-                onClick={() => setCreateMode("selectingEnd")}
-                className="flex-1 p-1 rounded cursor-pointer min-w-0"
+              readOnly
+              placeholder="End"
+              value={format(draftGroup.end)}
+              onClick={() => setCreateMode("selectingEnd")}
+              className="flex-1 p-1 rounded cursor-pointer min-w-0"
             />
           </div>
 

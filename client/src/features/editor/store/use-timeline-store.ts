@@ -55,6 +55,7 @@ export interface ITimelineStore {
 
   setDraftGroup: (dg: DraftGroup | null) => void;
   setCreateMode: (m: CreateMode) => void;
+  setCreateError: (e: string | null) => void;
 
   selectDraftStart: (time: number) => void;
   selectDraftEnd: (time: number) => void;
@@ -137,11 +138,21 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   selectedGroupId: null,
   selectGroup: (id) => {
-    const { groups, playerRef } = get();
+    const { groups, playerRef, createMode } = get();
+
+    if (createMode !== "idle") {
+      set({
+        createError:
+          "You cannot select an existing group while creating a new one.",
+      });
+      return;
+    }
+
     const group = groups.find((g) => Number(g.id) === id);
     if (group && playerRef?.current) {
       playerRef.current.currentTime = group.start;
     }
+
     set({ selectedGroupId: id });
   },
 
@@ -153,8 +164,6 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
 
   zoom: 1,
   setZoom: (z) => set({ zoom: z }),
-
-  /* --- drag / resize (без изменений) --- */
 
   updateGroupDrag: (id, wantedStart) =>
     set((state) => {
@@ -260,7 +269,8 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
       createMode: "idle",
     }),
 
-  setCreateMode: (m) => set({ createMode: m, createError: null }),
+  setCreateMode: (m) => set({ createMode: m }),
+  setCreateError: (e) => set({ createError: e }),
 
   selectDraftStart: (time) => {
     const { groups, draftGroup } = get();
