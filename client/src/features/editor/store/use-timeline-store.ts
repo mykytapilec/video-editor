@@ -61,6 +61,7 @@ export interface ITimelineStore {
   selectDraftEnd: (time: number) => void;
 
   commitDraftGroup: () => void;
+  deleteGroup: (id: number) => void;
 }
 
 const overlaps = (time: number, groups: TimelineGroup[]) =>
@@ -259,6 +260,14 @@ const useTimelineStore = create<ITimelineStore>((set, get) => ({
   createError: null,
   tempStart: null,
   tempEnd: null,
+
+  deleteGroup: (id: number) =>
+    set((state) => ({
+      groups: state.groups.filter((g) => Number(g.id) !== id),
+      originalGroups: state.originalGroups.filter((g) => Number(g.id) !== id),
+      selectedGroupId:
+        state.selectedGroupId === id ? null : state.selectedGroupId,
+    })),
 
   setDraftGroup: (dg) =>
     set({

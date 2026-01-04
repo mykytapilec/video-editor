@@ -1,8 +1,7 @@
-"use client";
-
-import useTimelineStore from "../store/use-timeline-store";
-import NewGroupForm from "./NewGroupForm";
+// GroupsList.tsx
 import GroupItem from "./GroupItem";
+import NewGroupForm from "./NewGroupForm";
+import useTimelineStore from "../store/use-timeline-store";
 
 export default function GroupsList() {
   const groups = useTimelineStore((s) => s.groups);

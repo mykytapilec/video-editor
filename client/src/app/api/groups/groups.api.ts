@@ -47,3 +47,17 @@ export async function updateGroupApi(
 
   return res.json();
 }
+
+export async function deleteGroupApi(id: string) {
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message?.[0] || "Failed to delete group");
+  }
+
+  return res.json();
+}
+

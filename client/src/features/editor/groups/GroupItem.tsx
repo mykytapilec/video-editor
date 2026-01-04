@@ -2,15 +2,10 @@
 
 import { useState } from "react";
 import { TimelineGroup } from "@/types";
-import useTimelineStore from "../store/use-timeline-store";
-import { updateGroupApi } from "@/app/api/groups/groups.api";
 import { useApiModalStore } from "../store/use-api-modal-store";
-
-function formatTime(sec: number) {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+import { updateGroupApi, deleteGroupApi } from "@/app/api/groups/groups.api";
+import useTimelineStore from "../store/use-timeline-store";
+import { formatTime } from "@/utils/format-time";
 
 interface Props {
   group: TimelineGroup;
@@ -18,32 +13,58 @@ interface Props {
 }
 
 export default function GroupItem({ group, index }: Props) {
-  const id = Number(group.id);
-
-  const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
   const selectGroup = useTimelineStore((s) => s.selectGroup);
-  const updateGroup = useTimelineStore((s) => s.updateGroup);
   const isGroupDirty = useTimelineStore((s) => s.isGroupDirty);
   const getGroupPatch = useTimelineStore((s) => s.getGroupPatch);
+  const updateGroup = useTimelineStore((s) => s.updateGroup);
   const revertGroup = useTimelineStore((s) => s.revertGroup);
-  const markGroupsAsOriginal = useTimelineStore(
-    (s) => s.markGroupsAsOriginal
-  );
+  const deleteGroup = useTimelineStore((s) => s.deleteGroup);
+
+  const selectedGroupId = useTimelineStore((s) => s.selectedGroupId);
 
   const openApiModal = useApiModalStore((s) => s.open);
 
   const [editingText, setEditingText] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const isSelected = selectedGroupId === id;
-  const isDirty = isGroupDirty(id);
-  const duration = group.end - group.start;
+  const handleDelete = () => {
+    openApiModal({
+      title: "Delete group",
+      description: `Are you sure you want to delete group #${index + 1}?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        await deleteGroupApi(group.id);
+        deleteGroup(Number(group.id));
+      },
+    });
+  };
+
+  const handleUpdate = () => {
+    const patch = getGroupPatch(Number(group.id));
+    if (!patch) return;
+
+    openApiModal({
+      title: "Update group",
+      description: `Update group #${index + 1}?`,
+      confirmText: "Update",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        await updateGroupApi(String(group.id), patch);
+        updateGroup(Number(group.id), patch);
+      },
+      onCancel: () => {
+        revertGroup(Number(group.id));
+      },
+    });
+  };
+
+  const dirty = isGroupDirty(Number(group.id));
 
   return (
     <div
-      onClick={() => selectGroup(id)}
+      onClick={() => selectGroup(Number(group.id))}
       className={`rounded border p-2 cursor-pointer ${
-        isSelected
+        selectedGroupId === Number(group.id)
           ? "border-blue-400 bg-blue-500/20"
           : "border-border"
       }`}
@@ -57,70 +78,57 @@ export default function GroupItem({ group, index }: Props) {
           className="w-full text-sm bg-black/20 border rounded p-1 mb-2"
           value={group.text}
           onChange={(e) =>
-            updateGroup(id, { text: e.target.value })
+            updateGroup(Number(group.id), { text: e.target.value })
           }
           onBlur={() => setEditingText(false)}
           autoFocus
         />
       ) : (
         <div
-          className="text-sm line-clamp-3 mb-2"
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            setEditingText(true);
-          }}
+          className="text-sm line-clamp-3 mb-2 relative"
+          onDoubleClick={() => setEditingText(true)}
         >
           {group.text}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingText(true);
+            }}
+            className="text-xs text-blue-400 absolute bottom-0 right-0"
+          >
+            Edit
+          </button>
         </div>
       )}
 
       <div className="text-xs text-muted-foreground flex gap-3 mb-2">
         <span>start: {formatTime(group.start)}</span>
         <span>end: {formatTime(group.end)}</span>
-        <span>duration: {formatTime(duration)}</span>
+        <span>duration: {formatTime(group.end - group.start)}</span>
       </div>
 
-      <div className="flex justify-between items-center">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditingText(true);
-          }}
-          className="text-xs text-blue-400"
-        >
-          Edit text
-        </button>
-
-        {isDirty && (
+      <div className="flex gap-2">
+        {dirty && (
           <button
-            disabled={loading}
             onClick={(e) => {
               e.stopPropagation();
-              const patch = getGroupPatch(id);
-              if (!patch) return;
-
-              openApiModal({
-                title: "Update group",
-                description: `Update group #${index + 1}?`,
-                confirmText: "Update",
-                cancelText: "Cancel",
-                onConfirm: async () => {
-                  try {
-                    setLoading(true);
-                    await updateGroupApi(String(id), patch);
-                    markGroupsAsOriginal();
-                  } finally {
-                    setLoading(false);
-                  }
-                },
-                onCancel: () => revertGroup(id),
-              });
+              handleUpdate();
             }}
             className="text-xs text-green-400"
           >
             Update
           </button>
         )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete();
+          }}
+          className="text-xs text-red-400"
+        >
+          Delete
+        </button>
       </div>
     </div>
   );
