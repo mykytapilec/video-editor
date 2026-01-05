@@ -161,9 +161,7 @@ const DownloadPopover = ({ stateManager }: { stateManager: StateManager }) => {
       ...stateManager.toJSON()
     };
 
-    console.log({ data });
-
-    actions.setState({ payload: data });
+    actions.setPayload(data);
     actions.startExport();
   };
 

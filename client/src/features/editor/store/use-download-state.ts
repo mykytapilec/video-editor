@@ -1,105 +1,111 @@
 import { IDesign } from "@designcombo/types";
 import { create } from "zustand";
+
+export type ExportType = "json" | "mp4";
+
 interface Output {
   url: string;
-  type: string;
+  type: ExportType;
+  filename: string;
 }
 
 interface DownloadState {
-  projectId: string;
   exporting: boolean;
-  exportType: "json" | "mp4";
+  exportType: ExportType;
   progress: number;
-  output?: Output;
   payload?: IDesign;
+  output?: Output;
   displayProgressModal: boolean;
+
   actions: {
-    setProjectId: (projectId: string) => void;
-    setExporting: (exporting: boolean) => void;
-    setExportType: (exportType: "json" | "mp4") => void;
-    setProgress: (progress: number) => void;
-    setState: (state: Partial<DownloadState>) => void;
-    setOutput: (output: Output) => void;
-    startExport: () => void;
-    setDisplayProgressModal: (displayProgressModal: boolean) => void;
+    setExportType: (type: ExportType) => void;
+    setPayload: (payload: IDesign) => void;
+    setDisplayProgressModal: (value: boolean) => void;
+    startExport: () => Promise<void>;
   };
 }
 
-//const baseUrl = "https://api.combo.sh/v1";
-
 export const useDownloadState = create<DownloadState>((set, get) => ({
-  projectId: "",
   exporting: false,
   exportType: "mp4",
   progress: 0,
   displayProgressModal: false,
+
   actions: {
-    setProjectId: (projectId) => set({ projectId }),
-    setExporting: (exporting) => set({ exporting }),
     setExportType: (exportType) => set({ exportType }),
-    setProgress: (progress) => set({ progress }),
-    setState: (state) => set({ ...state }),
-    setOutput: (output) => set({ output }),
-    setDisplayProgressModal: (displayProgressModal) =>
-      set({ displayProgressModal }),
+    setPayload: (payload) => set({ payload }),
+    setDisplayProgressModal: (value) =>
+      set({ displayProgressModal: value }),
+
     startExport: async () => {
-      try {
-        // Set exporting to true at the start
-        set({ exporting: true, displayProgressModal: true });
+      const { payload, exportType } = get();
+      if (!payload) {
+        console.error("Export failed: payload is missing");
+        return;
+      }
 
-        // Assume payload to be stored in the state for POST request
-        const { payload } = get();
+      /* ---------- JSON EXPORT ---------- */
+      if (exportType === "json") {
+        const blob = new Blob(
+          [JSON.stringify(payload, null, 2)],
+          { type: "application/json" }
+        );
 
-        if (!payload) throw new Error("Payload is not defined");
+        const url = URL.createObjectURL(blob);
 
-        // Step 1: POST request to start rendering
-        const response = await fetch(`/api/render`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
+        set({
+          exporting: false,
+          progress: 100,
+          output: {
+            url,
+            type: "json",
+            filename: "design.json"
           },
+          displayProgressModal: true
+        });
+
+        return;
+      }
+
+      /* ---------- MP4 EXPORT ---------- */
+      try {
+        set({
+          exporting: true,
+          progress: 0,
+          displayProgressModal: true
+        });
+
+        const res = await fetch("/api/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             design: payload,
-            options: {
-              fps: 30,
-              size: payload.size,
-              format: "mp4"
-            }
+            format: "mp4"
           })
         });
 
-        if (!response.ok) throw new Error("Failed to submit export request.");
+        if (!res.ok) {
+          throw new Error("Backend render failed");
+        }
 
-        const jobInfo = await response.json();
-        const jobId = jobInfo.render.id;
+        const { url } = await res.json();
 
-        // Step 2 & 3: Polling for status updates
-        const checkStatus = async () => {
-          const statusResponse = await fetch(`/api/render/${jobId}`, {
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
-
-          if (!statusResponse.ok)
-            throw new Error("Failed to fetch export status.");
-
-          const statusInfo = await statusResponse.json();
-          const { status, progress, presigned_url: url } = statusInfo.render;
-
-          set({ progress });
-
-          if (status === "COMPLETED") {
-            set({ exporting: false, output: { url, type: get().exportType } });
-          } else if (status === "PROCESSING" || status === "PENDING") {
-            setTimeout(checkStatus, 2500);
+        set({
+          exporting: false,
+          progress: 100,
+          output: {
+            url,
+            type: "mp4",
+            filename: "video.mp4"
           }
-        };
+        });
+      } catch (err) {
+        console.error("MP4 export failed:", err);
 
-        checkStatus();
-      } catch (error) {
-        console.error(error);
-        set({ exporting: false });
+        set({
+          exporting: false,
+          progress: 0
+        });
       }
     }
   }
