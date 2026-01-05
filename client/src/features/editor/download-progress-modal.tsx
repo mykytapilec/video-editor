@@ -1,42 +1,23 @@
+// client/src/features/editor/download-progress-modal.tsx
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useDownloadState } from "./store/use-download-state";
 import { Button } from "@/components/ui/button";
 import { CircleCheckIcon, XIcon } from "lucide-react";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
-import { useDownloadState } from "./store/use-download-state";
+import { download } from "@/utils/download";
 
 const DownloadProgressModal = () => {
-  const {
-    progress,
-    displayProgressModal,
-    output,
-    exporting,
-    actions
-  } = useDownloadState();
+  const { progress, displayProgressModal, output, actions } =
+    useDownloadState();
 
-  const isCompleted = progress === 100 && !!output;
-  const isJson = output?.type === "json";
+  const isCompleted = progress === 100;
 
-  const title = isCompleted
-    ? isJson
-      ? "Exported as JSON"
-      : "Exported"
-    : "Exporting...";
+  const handleDownload = async () => {
+    if (!output?.url) return;
 
-  const description = isCompleted
-    ? isJson
-      ? "You can download the project design as a JSON file."
-      : "You can download the video to your device."
-    : "Closing the browser will not cancel the export.";
+    await download(output.url, output.filename);
 
-  const handleDownload = () => {
-    if (!output) return;
-
-    const link = document.createElement("a");
-    link.href = output.url;
-    link.download = output.filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    actions.setDisplayProgressModal(false);
   };
 
   return (
@@ -48,48 +29,36 @@ const DownloadProgressModal = () => {
         <DialogTitle className="hidden" />
         <DialogDescription className="hidden" />
 
-        <XIcon
-          onClick={() => actions.setDisplayProgressModal(false)}
-          className="absolute right-4 top-5 h-5 w-5 text-zinc-400 hover:cursor-pointer hover:text-zinc-500"
-        />
-
         <div className="flex h-16 items-center border-b px-4 font-medium">
           Export
         </div>
 
         {isCompleted ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <CircleCheckIcon className="h-10 w-10 text-emerald-500" />
-
-            <div className="text-lg font-semibold">{title}</div>
-            <div className="text-muted-foreground max-w-md">
-              {description}
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center space-y-2 text-center">
+              <CircleCheckIcon className="h-8 w-8 text-green-500" />
+              <div className="text-lg font-bold">Exported</div>
+              <div className="text-muted-foreground">
+                {output?.type === "json"
+                  ? "You can download the design JSON file."
+                  : "You can download the video to your device."}
+              </div>
             </div>
 
             <Button onClick={handleDownload}>
-              Download {isJson ? "JSON" : "Video"}
+              Download
             </Button>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <div className="text-5xl font-semibold">
               {Math.floor(progress)}%
             </div>
-
-            <div className="text-lg font-semibold">{title}</div>
-
-            <div className="text-muted-foreground max-w-md">
-              {description}
+            <div className="font-bold">Exporting...</div>
+            <div className="text-center text-zinc-500 space-y-1">
+              <div>Closing the browser will not cancel the export.</div>
+              <div>The file will be saved in your space.</div>
             </div>
-
-            {!exporting && (
-              <Button
-                variant="outline"
-                onClick={() => actions.setDisplayProgressModal(false)}
-              >
-                Close
-              </Button>
-            )}
           </div>
         )}
       </DialogContent>
