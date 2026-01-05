@@ -75,13 +75,13 @@ export const useDownloadState = create<DownloadState>((set, get) => ({
           displayProgressModal: true
         });
 
-        const res = await fetch("/api/render", {
+        const res = await fetch("http://localhost:3001/api/render", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             design: payload,
-            format: "mp4"
-          })
+            format: "mp4",
+          }),
         });
 
         if (!res.ok) {

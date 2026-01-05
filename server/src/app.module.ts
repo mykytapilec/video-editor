@@ -6,8 +6,10 @@ import {
 } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as Joi from 'joi';
+import { join } from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { GroupsModule } from './groups/groups.module';
-import { VideosModule } from './videos/videos.module';
+import { RenderModule } from './render/render.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 const envValidationSchema: Joi.ObjectSchema<Record<string, unknown>> =
@@ -22,8 +24,13 @@ const envValidationSchema: Joi.ObjectSchema<Record<string, unknown>> =
 @Module({
   imports: [
     GroupsModule,
-    VideosModule,
+    RenderModule,
     UploadsModule,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'exports'),
+      serveRoot: '/exports',
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
