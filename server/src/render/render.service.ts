@@ -1,28 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { FFmpegService } from './ffmpeg/ffmpeg.service';
 
 @Injectable()
 export class RenderService {
-  renderMp4() {
-    const id = randomUUID();
-    const filename = `video-${id}.mp4`;
+  constructor(private readonly ffmpeg: FFmpegService) {}
 
-    const exportsDir = path.join(process.cwd(), 'exports');
-    const filePath = path.join(exportsDir, filename);
-
-    if (!fs.existsSync(exportsDir)) {
-      fs.mkdirSync(exportsDir, { recursive: true });
-    }
-
-    fs.writeFileSync(
-      filePath,
-      'VIDEO PLACEHOLDER\nThis file will be replaced by real render later.',
-    );
+  async exportEmptyVideo() {
+    const path = await this.ffmpeg.renderEmptyMp4();
 
     return {
-      url: `/exports/${filename}`,
+      path,
+      url: `/exports/${path.split('/exports/')[1]}`,
     };
   }
 }
