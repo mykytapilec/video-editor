@@ -1,4 +1,3 @@
-// client/src/features/editor/download-progress-modal.tsx
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useDownloadState } from "./store/use-download-state";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,7 @@ import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { download } from "@/utils/download";
 
 const DownloadProgressModal = () => {
-  const { progress, displayProgressModal, output, actions } =
-    useDownloadState();
+  const { progress, displayProgressModal, output, actions } = useDownloadState();
 
   const isCompleted = progress === 100;
 
@@ -16,21 +14,21 @@ const DownloadProgressModal = () => {
     if (!output?.url) return;
 
     await download(output.url, output.filename);
-
     actions.setDisplayProgressModal(false);
   };
 
   return (
-    <Dialog
-      open={displayProgressModal}
-      onOpenChange={actions.setDisplayProgressModal}
-    >
+    <Dialog open={displayProgressModal} onOpenChange={actions.setDisplayProgressModal}>
       <DialogContent className="flex h-[627px] flex-col gap-0 bg-background p-0 sm:max-w-[844px]">
         <DialogTitle className="hidden" />
         <DialogDescription className="hidden" />
 
-        <div className="flex h-16 items-center border-b px-4 font-medium">
+        {/* Header */}
+        <div className="flex h-16 items-center border-b px-4 font-medium justify-between">
           Export
+          <button onClick={() => actions.setDisplayProgressModal(false)}>
+            <XIcon className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
 
         {isCompleted ? (
@@ -44,16 +42,11 @@ const DownloadProgressModal = () => {
                   : "You can download the video to your device."}
               </div>
             </div>
-
-            <Button onClick={handleDownload}>
-              Download
-            </Button>
+            <Button onClick={handleDownload}>Download</Button>
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <div className="text-5xl font-semibold">
-              {Math.floor(progress)}%
-            </div>
+            <div className="text-5xl font-semibold">{Math.floor(progress)}%</div>
             <div className="font-bold">Exporting...</div>
             <div className="text-center text-zinc-500 space-y-1">
               <div>Closing the browser will not cancel the export.</div>
