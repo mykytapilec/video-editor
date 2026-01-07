@@ -30,7 +30,7 @@
     "@remotion/bundler": "^4.0.402",
     "@remotion/renderer": "^4.0.402",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.2",
+    "class-validator": "^0.14.3",
     "joi": "^18.0.1",
     "node-fetch": "^2.7.0",
     "pg": "^8.16.3",
