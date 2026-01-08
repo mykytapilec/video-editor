@@ -1,38 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import * as path from 'path';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
-
-const execFileAsync = promisify(execFile);
-
-export interface RenderMp4Options {
-  width: number;
-  height: number;
-  fps: number;
-  duration: number;
-}
+import { dirname } from 'path';
+import { RenderMp4Options } from './render-mp4.options';
 
 @Injectable()
-export class FFmpegService {
-  private readonly exportsDir = path.resolve(process.cwd(), 'exports');
+export class FfmpegService {
+  async renderMp4(options: RenderMp4Options): Promise<void> {
+    const { width, height, fps, duration, outputPath } = options;
 
-  constructor() {
-    if (!fs.existsSync(this.exportsDir)) {
-      fs.mkdirSync(this.exportsDir, { recursive: true });
-    }
-  }
+    fs.mkdirSync(dirname(outputPath), { recursive: true });
 
-  async renderMp4(options: RenderMp4Options): Promise<string> {
-    const { width, height, fps, duration } = options;
-
-    if (!width || !height || !fps || !duration) {
-      throw new Error('Invalid render options');
-    }
-
-    const outputPath = path.join(this.exportsDir, `export-${Date.now()}.mp4`);
-
-    const args: string[] = [
+    const args = [
       '-y',
       '-f',
       'lavfi',
@@ -40,31 +19,18 @@ export class FFmpegService {
       `color=c=black:s=${width}x${height}:r=${fps}`,
       '-t',
       String(duration),
-      '-c:v',
-      'libx264',
-      '-profile:v',
-      'high',
-      '-level',
-      '4.0',
       '-pix_fmt',
       'yuv420p',
-      '-movflags',
-      '+faststart',
       outputPath,
     ];
 
-    try {
-      await execFileAsync('ffmpeg', args);
-      return outputPath;
-    } catch (error: unknown) {
-      const err = error as { stderr?: string };
+    await new Promise<void>((resolve, reject) => {
+      const ffmpeg = spawn('ffmpeg', args);
 
-      console.error(
-        'FFmpeg render failed:',
-        err.stderr ?? 'Unknown FFmpeg error',
-      );
-
-      throw new Error('FFmpeg render failed');
-    }
+      ffmpeg.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`ffmpeg exited with code ${code}`));
+      });
+    });
   }
 }

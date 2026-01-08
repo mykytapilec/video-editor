@@ -1,25 +1,31 @@
+// server/src/render/render.service.ts
 import { Injectable } from '@nestjs/common';
-import { FFmpegService } from './ffmpeg/ffmpeg.service';
+import { join } from 'path';
 import { RenderRequestDto } from './dto/render-request.dto';
+import { FfmpegService } from './ffmpeg/ffmpeg.service';
 
 @Injectable()
 export class RenderService {
-  constructor(private readonly ffmpeg: FFmpegService) {}
+  constructor(private readonly ffmpegService: FfmpegService) {}
 
-  async renderMp4(video: RenderRequestDto['video']): Promise<{
-    path: string;
-    url: string;
-  }> {
-    const outputPath = await this.ffmpeg.renderMp4({
-      width: video.width,
-      height: video.height,
-      fps: video.fps,
-      duration: video.duration,
+  async render(dto: RenderRequestDto) {
+    const { video } = dto;
+    const { width, height, fps, duration, groupId } = video;
+
+    const filename = `video_${groupId}.mp4`;
+    const outputPath = join(process.cwd(), 'server', 'exports', filename);
+
+    await this.ffmpegService.renderMp4({
+      width,
+      height,
+      fps,
+      duration,
+      outputPath,
     });
 
     return {
       path: outputPath,
-      url: `/exports/${outputPath.split('/exports/')[1]}`,
+      url: `/exports/${filename}`,
     };
   }
 }

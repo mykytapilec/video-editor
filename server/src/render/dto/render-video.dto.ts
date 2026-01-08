@@ -16,4 +16,8 @@ export class RenderVideoDto {
   @IsInt()
   @Min(1)
   duration!: number;
+
+  @IsInt()
+  @Min(1)
+  groupId!: number;
 }
