@@ -1,7 +1,39 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Video, VideoStatus, VideoMeta } from '../render/render.entity';
+import { Repository } from 'typeorm';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { execFile } from 'child_process';
+
+import ffprobe from 'ffprobe-static';
+import fetch, { Response } from 'node-fetch';
+
+import { Video, VideoStatus } from '../render/render.entity';
+
+function resolveFfprobePath(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'path' in value &&
+    typeof (value as { path: unknown }).path === 'string'
+  ) {
+    return (value as { path: string }).path;
+  }
+
+  throw new Error('Invalid ffprobe-static export');
+}
+
+const ffprobePath = resolveFfprobePath(ffprobe);
+
+export interface VideoMeta {
+  duration: number;
+  fps: number;
+  hasAudio: boolean;
+}
 
 @Injectable()
 export class UploadsService {
@@ -17,15 +49,9 @@ export class UploadsService {
       const u = new URL(raw);
 
       if (u.hostname.endsWith('dropbox.com')) {
-        const cleaned = `${u.origin}${u.pathname}`.replace(
-          u.hostname,
-          'dl.dropboxusercontent.com',
-        );
-        return cleaned.split('?')[0];
-      }
-
-      if (raw.includes('dl=0')) {
-        return raw.replace('dl=0', 'dl=1');
+        return `${u.origin}${u.pathname}`
+          .replace(u.hostname, 'dl.dropboxusercontent.com')
+          .split('?')[0];
       }
 
       return raw;
@@ -34,76 +60,108 @@ export class UploadsService {
     }
   }
 
-  private async verifyUrlHead(
-    url: string,
-  ): Promise<{ ok: boolean; acceptRanges?: string; contentLength?: number }> {
-    try {
-      const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+  private async downloadFile(url: string, dest: string): Promise<void> {
+    const res: Response = await fetch(url);
 
-      if (head.ok) {
-        const acceptRanges = head.headers.get('accept-ranges') ?? undefined;
-        const cl = head.headers.get('content-length');
-        return {
-          ok: true,
-          acceptRanges,
-          contentLength: cl ? Number(cl) : undefined,
-        };
-      }
-
-      const get = await fetch(url, {
-        method: 'GET',
-        headers: { Range: 'bytes=0-0' },
-        redirect: 'follow',
-      });
-
-      if (get.status === 206 || get.status === 200) {
-        const acceptRanges = get.headers.get('accept-ranges') ?? undefined;
-        const cl = get.headers.get('content-length');
-        return {
-          ok: true,
-          acceptRanges,
-          contentLength: cl ? Number(cl) : undefined,
-        };
-      }
-
-      return { ok: false };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unknown fetch error';
-      this.logger.warn(`verifyUrlHead failed for ${url}: ${msg}`);
-      return { ok: false };
+    if (!res.ok) {
+      throw new Error(`Failed to download: ${res.status} ${res.statusText}`);
     }
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+
+    await mkdir(join(dest, '..'), { recursive: true });
+    await writeFile(dest, buffer);
   }
 
-  async createFromUrls(userId: string, urls: string[]) {
+  private getVideoMeta(filePath: string): Promise<VideoMeta> {
+    return new Promise((resolve, reject) => {
+      execFile(
+        ffprobePath,
+        [
+          '-v',
+          'error',
+          '-print_format',
+          'json',
+          '-show_streams',
+          '-show_format',
+          filePath,
+        ],
+        (error, stdout) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          const parsed: {
+            streams?: Array<{
+              codec_type?: string;
+              duration?: string;
+              avg_frame_rate?: string;
+            }>;
+            format?: { duration?: string };
+          } = JSON.parse(stdout);
+
+          const video = parsed.streams?.find(
+            (s) => s.codec_type === 'video',
+          );
+          const audio = parsed.streams?.find(
+            (s) => s.codec_type === 'audio',
+          );
+
+          const duration = video?.duration
+            ? Number(video.duration)
+            : Number(parsed.format?.duration ?? 0);
+
+          const fps = video?.avg_frame_rate
+            ? (() => {
+                const [a, b] = video.avg_frame_rate.split('/');
+                return Number(a) / Number(b);
+              })()
+            : 30;
+
+          resolve({
+            duration,
+            fps,
+            hasAudio: Boolean(audio),
+          });
+        },
+      );
+    });
+  }
+
+  async createFromUrls(userId: string, urls: string[]): Promise<Video[]> {
     const results: Video[] = [];
 
     for (const rawUrl of urls) {
-      const originalUrl = rawUrl;
       const directUrl = this.toDropboxDirect(rawUrl);
 
-      let status: VideoStatus = VideoStatus.UNVERIFIED;
-      let meta: VideoMeta | undefined;
+      const filename = `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.mp4`;
 
-      const verification = await this.verifyUrlHead(directUrl);
+      const sourcePath = join(
+        process.cwd(),
+        'server',
+        'uploads',
+        filename,
+      );
 
-      if (verification.ok) {
-        status = VideoStatus.VERIFIED;
-        meta = {
-          acceptRanges: verification.acceptRanges,
-          contentLength: verification.contentLength,
-        };
-      }
+      await this.downloadFile(directUrl, sourcePath);
+
+      const meta = await this.getVideoMeta(sourcePath);
 
       const video = this.videoRepo.create({
         userId,
-        originalUrl,
+        originalUrl: rawUrl,
         directUrl,
-        status,
-        meta,
+        sourcePath,
+        duration: meta.duration,
+        fps: meta.fps,
+        hasAudio: meta.hasAudio,
+        status: VideoStatus.UPLOADED,
       });
 
-      const saved = await this.videoRepo.save(video);
-      results.push(saved);
+      results.push(await this.videoRepo.save(video));
     }
 
     return results;

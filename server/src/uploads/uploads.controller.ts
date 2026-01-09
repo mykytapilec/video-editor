@@ -8,15 +8,18 @@ export class UploadsController {
 
   @Post('url')
   async uploadUrls(@Body() dto: CreateUploadDto) {
-    const { userId, urls } = dto;
     try {
-      const videos = await this.uploadsService.createFromUrls(userId, urls);
+      const videos = await this.uploadsService.createFromUrls(
+        dto.userId,
+        dto.urls,
+      );
       return videos.map((v) => ({
         id: v.id,
         originalUrl: v.originalUrl,
         directUrl: v.directUrl,
-        status: v.status,
+        sourcePath: v.sourcePath,
         meta: v.meta,
+        status: v.status,
       }));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';

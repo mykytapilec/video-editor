@@ -1,50 +1,37 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 export enum VideoStatus {
-  VERIFIED = 'verified',
   UNVERIFIED = 'unverified',
-  ERROR = 'error',
+  UPLOADING = 'uploading',
+  VERIFIED = 'verified',
 }
 
 export interface VideoMeta {
-  acceptRanges?: string;
-  contentLength?: number;
-  [key: string]: unknown;
+  duration: number;
+  fps: number;
+  hasAudio: boolean;
 }
 
-@Entity('videos')
+@Entity()
 export class Video {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-  @Column({ type: 'varchar' })
+  @Column()
   userId!: string;
 
-  @Column({ type: 'text' })
+  @Column()
   originalUrl!: string;
 
-  @Column({ type: 'text' })
+  @Column()
   directUrl!: string;
 
-  @Column({
-    type: 'enum',
-    enum: VideoStatus,
-    default: VideoStatus.UNVERIFIED,
-  })
-  status!: VideoStatus;
+  @Column({ nullable: true })
+  sourcePath?: string;
 
   @Column({ type: 'json', nullable: true })
   meta?: VideoMeta;
 
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @Column({ type: 'enum', enum: VideoStatus, default: VideoStatus.UNVERIFIED })
+  status!: VideoStatus;
 }
